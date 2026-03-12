@@ -1,0 +1,9 @@
+End-to-end test file
+====================
+
+Created: 2025-03-12
+Purpose: Verify that files created in this workspace are visible locally.
+
+If you can see this file in your project, the workflow is working.
+
+You can delete this file anytime.
