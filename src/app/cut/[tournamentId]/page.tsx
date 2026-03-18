@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTournamentById, getParticipants, getPicks, getCuts } from '@/lib/sheets';
+import { getCurrentRound } from '@/lib/espn';
 import CutSelector from './CutSelector';
 
 export const revalidate = 0;
@@ -26,6 +27,9 @@ export default async function CutPage({ params }: Props) {
     );
   }
 
+  const round = await getCurrentRound(tournament.espnEventId);
+  const locked = round >= 3;
+
   return (
     <div className="space-y-6 max-w-lg mx-auto">
       <div>
@@ -35,13 +39,36 @@ export default async function CutPage({ params }: Props) {
         </p>
       </div>
 
-      <CutSelector
-        tournamentId={tournament.id}
-        cutsPerPerson={tournament.cutsPerPerson}
-        participants={participants}
-        picks={picks}
-        existingCuts={cuts}
-      />
+      {locked ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center space-y-2">
+          <p className="text-red-700 font-semibold text-lg">🔒 Cuts are locked</p>
+          <p className="text-red-600 text-sm">Round 3 has begun. No more changes allowed.</p>
+          {cuts.length > 0 && (
+            <div className="mt-4 text-left space-y-1">
+              <p className="text-sm font-medium text-gray-700">Submitted cuts:</p>
+              {participants.map((p) => {
+                const myCuts = cuts.filter((c) => c.participantName === p.name).sort((a, b) => a.dropNumber - b.dropNumber);
+                if (myCuts.length === 0) return null;
+                return (
+                  <div key={p.name} className="text-sm text-gray-600">
+                    <span className="font-medium">{p.name}:</span>{' '}
+                    {myCuts.map((c) => c.golferName).join(', ')}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <CutSelector
+          tournamentId={tournament.id}
+          cutsPerPerson={tournament.cutsPerPerson}
+          participants={participants}
+          picks={picks}
+          existingCuts={cuts}
+          locked={false}
+        />
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ interface Props {
   participants: Participant[];
   picks: Pick[];
   existingCuts: Cut[];
+  locked: boolean;
 }
 
 export default function CutSelector({

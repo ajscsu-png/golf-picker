@@ -21,6 +21,21 @@ function parseStatus(competitor: Record<string, unknown>): GolferScore['status']
   return 'active';
 }
 
+export async function getCurrentRound(espnEventId: string): Promise<number> {
+  try {
+    const res = await fetch(`${SCOREBOARD_BASE}?event=${espnEventId}`, { cache: 'no-store' });
+    if (!res.ok) return 1;
+    const data = await res.json() as Record<string, unknown>;
+    const events = (data.events as Array<Record<string, unknown>>) ?? [];
+    const event = events.find((e) => String(e.id) === String(espnEventId)) ?? events[0];
+    const competition = (event?.competitions as Array<Record<string, unknown>>)?.[0];
+    const period = (competition?.status as Record<string, unknown>)?.period;
+    return typeof period === 'number' ? period : 1;
+  } catch {
+    return 1;
+  }
+}
+
 export async function getEvents(): Promise<EspnEvent[]> {
   const year = new Date().getFullYear();
   const res = await fetch(`${EVENTS_URL}?limit=50&dates=${year}`, {
