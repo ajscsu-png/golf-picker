@@ -1,6 +1,7 @@
 import type { EspnGolfer, EspnEvent, GolferScore } from '@/types';
 
 const SUMMARY_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary';
+const SCOREBOARD_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const EVENTS_URL = 'https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events';
 
 function parseScore(raw: string | undefined | null): number | null {
@@ -61,21 +62,47 @@ export async function getEvents(): Promise<EspnEvent[]> {
 }
 
 export async function getField(eventId: string): Promise<EspnGolfer[]> {
-  const res = await fetch(`${SUMMARY_BASE}?event=${eventId}`, {
+  // Try summary endpoint first (works once tournament is live)
+  const summaryRes = await fetch(`${SUMMARY_BASE}?event=${eventId}`, {
     next: { revalidate: 3600 },
   });
-  if (!res.ok) return [];
-  const data = await res.json() as Record<string, unknown>;
-  const competitors = extractCompetitors(data);
-  return competitors.map((c) => {
-    const athlete = c.athlete as Record<string, unknown> | undefined;
-    const ranking = athlete?.ranking as Record<string, unknown> | undefined;
-    return {
-      id: String(c.id ?? ''),
-      name: String(athlete?.displayName ?? ''),
-      worldRanking: ranking?.current != null ? Number(ranking.current) : undefined,
-    };
+
+  if (summaryRes.ok) {
+    const data = await summaryRes.json() as Record<string, unknown>;
+    const competitors = extractCompetitors(data);
+    if (competitors.length > 0) {
+      return competitors.map((c) => {
+        const athlete = c.athlete as Record<string, unknown> | undefined;
+        const ranking = athlete?.ranking as Record<string, unknown> | undefined;
+        return {
+          id: String(c.id ?? ''),
+          name: String(athlete?.displayName ?? ''),
+          worldRanking: ranking?.current != null ? Number(ranking.current) : undefined,
+        };
+      });
+    }
+  }
+
+  // Fallback: scoreboard endpoint works for pre-tournament field
+  const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${eventId}`, {
+    next: { revalidate: 3600 },
   });
+  if (!scoreboardRes.ok) return [];
+  const sbData = await scoreboardRes.json() as Record<string, unknown>;
+  const events = (sbData.events as Array<Record<string, unknown>>) ?? [];
+  const event = events.find((e) => String(e.id) === String(eventId)) ?? events[0];
+  if (!event) return [];
+  const competitors = ((event.competitions as Array<Record<string, unknown>>)?.[0]?.competitors ?? []) as Array<Record<string, unknown>>;
+  return competitors
+    .map((c) => {
+      const athlete = c.athlete as Record<string, unknown> | undefined;
+      return {
+        id: String(c.id ?? ''),
+        name: String(athlete?.displayName ?? athlete?.fullName ?? ''),
+        worldRanking: undefined,
+      };
+    })
+    .filter((g) => g.id && g.name);
 }
 
 export async function getLeaderboard(
