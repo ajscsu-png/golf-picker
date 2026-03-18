@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [tEspnId, setTEspnId] = useState('');
   const [tEspnName, setTEspnName] = useState('');
   const [tPicks, setTPicks] = useState('6');
+  const [tPlayerCount, setTPlayerCount] = useState('8');
   const [tSubmitting, setTSubmitting] = useState(false);
   const [tMessage, setTMessage] = useState('');
 
@@ -215,16 +216,33 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Picks Per Person</label>
-            <select
-              value={tPicks}
-              onChange={(e) => setTPicks(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-            >
-              <option value="5">5</option>
-              <option value="6">6</option>
-            </select>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Picks Per Person</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={tPicks}
+                onChange={(e) => setTPicks(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Number of Players</label>
+              <input
+                type="number"
+                min="2"
+                max="20"
+                value={tPlayerCount}
+                onChange={(e) => {
+                  const n = Math.max(2, Math.min(20, parseInt(e.target.value) || 2));
+                  setTPlayerCount(String(n));
+                  setParticipants(Array.from({ length: n }, (_, i) => ({ name: '', draftPosition: i + 1 })));
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            </div>
           </div>
 
           <div>
