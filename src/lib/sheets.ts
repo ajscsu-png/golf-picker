@@ -126,7 +126,7 @@ export async function createTournament(
 }
 
 // Also update deleteTournament to include Cuts sheet
-const DROPS_HEADER = ['tournament_id', 'participant_name', 'golfer_espn_id', 'golfer_name'];
+const DROPS_HEADER = ['tournament_id', 'participant_name', 'golfer_espn_id', 'golfer_name', 'drop_number'];
 
 export async function getCuts(tournamentId: string): Promise<Cut[]> {
   const rows = await getRows('Drops');
@@ -137,13 +137,14 @@ export async function getCuts(tournamentId: string): Promise<Cut[]> {
       participantName: r[1],
       golferEspnId: r[2],
       golferName: r[3],
+      dropNumber: parseInt(r[4] ?? '1', 10) || 1,
     }));
 }
 
-export async function setCuts(tournamentId: string, participantName: string, cuts: Array<{ golferEspnId: string; golferName: string }>): Promise<void> {
+export async function setCuts(tournamentId: string, participantName: string, cuts: Array<{ golferEspnId: string; golferName: string; dropNumber: number }>): Promise<void> {
   const allRows = await getRows('Drops');
   const otherRows = allRows.filter((r) => !(r[0] === tournamentId && r[1] === participantName));
-  const newRows = cuts.map((c) => [tournamentId, participantName, c.golferEspnId, c.golferName]);
+  const newRows = cuts.map((c) => [tournamentId, participantName, c.golferEspnId, c.golferName, String(c.dropNumber)]);
   await clearAndWriteRows('Drops', DROPS_HEADER, [...otherRows, ...newRows]);
 }
 

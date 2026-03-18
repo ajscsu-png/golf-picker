@@ -16,6 +16,7 @@ export interface Cut {
   participantName: string;
   golferEspnId: string;
   golferName: string;
+  dropNumber: number; // 1, 2, or 3
 }
 
 export interface Participant {

@@ -29,31 +29,42 @@ function buildLeaderboard(
 ): ParticipantLeaderboardRow[] {
   const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
 
+  // Bubble score = worst final totalScore among golfers who made the cut (status active)
+  const madeTheCut = scores.filter((s) => s.status === 'active' && s.totalScore !== null);
+  const bubbleScore = madeTheCut.length > 0
+    ? Math.max(...madeTheCut.map((s) => s.totalScore as number))
+    : null;
+
   const rows = participants.map((participant) => {
     const myPicks = picks.filter((p) => p.participantName === participant.name);
-    const myCutIds = new Set(
-      cuts.filter((c) => c.participantName === participant.name).map((c) => c.golferEspnId)
-    );
+    const myCuts = cuts.filter((c) => c.participantName === participant.name);
+    const myCutMap = new Map(myCuts.map((c) => [c.golferEspnId, c]));
 
     const golfers = myPicks.map((pick) => {
       const score = scoreMap.get(pick.golferEspnId);
-      const dropped = myCutIds.has(pick.golferEspnId);
-      return score
-        ? { ...score, picked: true, dropped }
-        : {
-            tournamentId: pick.tournamentId,
-            golferEspnId: pick.golferEspnId,
-            golferName: pick.golferName,
-            position: '',
-            totalScore: null,
-            r1: null,
-            r2: null,
-            r3: null,
-            r4: null,
-            status: 'active' as const,
-            picked: true,
-            dropped,
-          };
+      const cut = myCutMap.get(pick.golferEspnId);
+      const dropped = !!cut;
+      const isThirdDrop = cut?.dropNumber === 3;
+      const missedCut = score && score.status !== 'active';
+
+      // 3rd drop on a missed-cut golfer → apply bubble score penalty instead of excluding
+      let effectiveScore = score ? { ...score, picked: true, dropped } : {
+        tournamentId: pick.tournamentId,
+        golferEspnId: pick.golferEspnId,
+        golferName: pick.golferName,
+        position: '',
+        totalScore: null,
+        r1: null, r2: null, r3: null, r4: null,
+        status: 'active' as const,
+        picked: true,
+        dropped,
+      };
+
+      if (isThirdDrop && missedCut && bubbleScore !== null) {
+        effectiveScore = { ...effectiveScore, totalScore: bubbleScore, dropped: false };
+      }
+
+      return effectiveScore;
     });
 
     const scoredGolfers = golfers.filter((g) => g.totalScore !== null && !g.dropped);

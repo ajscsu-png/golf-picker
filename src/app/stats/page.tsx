@@ -20,12 +20,23 @@ function computeScore(
   cuts: Cut[]
 ): number | null {
   const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
-  const cutIds = new Set(cuts.filter((c) => c.participantName === participantName).map((c) => c.golferEspnId));
+  const myCuts = cuts.filter((c) => c.participantName === participantName);
+  const myCutMap = new Map(myCuts.map((c) => [c.golferEspnId, c]));
+
+  const madeTheCut = scores.filter((s) => s.status === 'active' && s.totalScore !== null);
+  const bubbleScore = madeTheCut.length > 0
+    ? Math.max(...madeTheCut.map((s) => s.totalScore as number))
+    : null;
+
   const myPicks = picks.filter((p) => p.participantName === participantName);
-  const scored = myPicks
-    .filter((p) => !cutIds.has(p.golferEspnId))
-    .map((p) => scoreMap.get(p.golferEspnId)?.totalScore ?? null)
-    .filter((s): s is number => s !== null);
+  const scored = myPicks.map((p) => {
+    const cut = myCutMap.get(p.golferEspnId);
+    const score = scoreMap.get(p.golferEspnId);
+    if (!cut) return score?.totalScore ?? null;
+    if (cut.dropNumber === 3 && score?.status !== 'active' && bubbleScore !== null) return bubbleScore;
+    return null; // drops 1 & 2 excluded
+  }).filter((s): s is number => s !== null);
+
   return scored.length > 0 ? scored.reduce((a, b) => a + b, 0) : null;
 }
 

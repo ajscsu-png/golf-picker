@@ -15,7 +15,7 @@ export async function POST(
 ) {
   const { participantName, cuts } = await req.json() as {
     participantName: string;
-    cuts: Array<{ golferEspnId: string; golferName: string }>;
+    cuts: Array<{ golferEspnId: string; golferName: string; dropNumber: number }>;
   };
 
   if (!participantName || !Array.isArray(cuts)) {
