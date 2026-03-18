@@ -8,6 +8,7 @@ export interface Tournament {
   status: TournamentStatus;
   picksPerPerson: number;
   cutsPerPerson: number; // 0 = disabled, 1 or 2
+  isMajor: boolean;
 }
 
 export interface Cut {

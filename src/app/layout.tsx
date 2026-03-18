@@ -27,12 +27,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span>⛳</span>
               <span>Golf Picker</span>
             </Link>
-            <Link
-              href="/admin"
-              className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
-            >
-              Admin
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/stats" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+                Stats
+              </Link>
+              <Link href="/admin" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+                Admin
+              </Link>
+            </div>
           </div>
         </nav>
         <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">

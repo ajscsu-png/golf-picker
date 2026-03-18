@@ -91,7 +91,7 @@ export async function setConfig(key: string, value: string): Promise<void> {
 
 // ─── Tournaments ─────────────────────────────────────────────────────────────
 
-const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person'];
+const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person', 'is_major'];
 
 function rowToTournament(r: string[]): Tournament {
   return {
@@ -102,6 +102,7 @@ function rowToTournament(r: string[]): Tournament {
     status: r[4] as Tournament['status'],
     picksPerPerson: parseInt(r[5], 10),
     cutsPerPerson: parseInt(r[6] ?? '0', 10) || 0,
+    isMajor: r[7] === '1',
   };
 }
 
@@ -119,7 +120,7 @@ export async function createTournament(
   t: Omit<Tournament, 'id'>
 ): Promise<Tournament> {
   const id = crypto.randomUUID();
-  const row = [id, t.name, String(t.year), t.espnEventId, t.status, String(t.picksPerPerson), String(t.cutsPerPerson ?? 0)];
+  const row = [id, t.name, String(t.year), t.espnEventId, t.status, String(t.picksPerPerson), String(t.cutsPerPerson ?? 0), t.isMajor ? '1' : '0'];
   await appendRow('Tournaments', row);
   return { id, ...t };
 }

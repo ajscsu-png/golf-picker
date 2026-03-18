@@ -8,7 +8,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, year, espnEventId, picksPerPerson, cutsPerPerson } = body;
+  const { name, year, espnEventId, picksPerPerson, cutsPerPerson, isMajor } = body;
 
   if (!name || !year || !espnEventId || !picksPerPerson) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     status: 'draft',
     picksPerPerson: parseInt(picksPerPerson, 10),
     cutsPerPerson: parseInt(cutsPerPerson ?? '0', 10) || 0,
+    isMajor: isMajor === true || isMajor === 'true',
   });
 
   return NextResponse.json(tournament, { status: 201 });

@@ -20,6 +20,7 @@ export default function AdminPage() {
   const [tEspnName, setTEspnName] = useState('');
   const [tPicks, setTPicks] = useState('6');
   const [tCuts, setTCuts] = useState('0');
+  const [tIsMajor, setTIsMajor] = useState(false);
   const [tPlayerCount, setTPlayerCount] = useState('8');
   const [tSubmitting, setTSubmitting] = useState(false);
   const [tMessage, setTMessage] = useState('');
@@ -92,6 +93,7 @@ export default function AdminPage() {
           espnEventId: tEspnId,
           picksPerPerson: tPicks,
           cutsPerPerson: tCuts,
+          isMajor: tIsMajor,
         }),
       });
       const data = await res.json();
@@ -301,6 +303,19 @@ export default function AdminPage() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isMajor"
+              checked={tIsMajor}
+              onChange={(e) => setTIsMajor(e.target.checked)}
+              className="w-4 h-4 accent-green-600"
+            />
+            <label htmlFor="isMajor" className="text-sm font-medium text-gray-700">
+              Major Tournament <span className="text-gray-400 font-normal">(counts toward all-time stats)</span>
+            </label>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-4">
