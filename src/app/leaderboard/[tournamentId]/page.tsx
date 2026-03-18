@@ -8,6 +8,7 @@ import {
 } from '@/lib/sheets';
 import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
+import RefreshScoresButton from '@/components/RefreshScoresButton';
 import Link from 'next/link';
 
 export const revalidate = 60;
@@ -100,7 +101,7 @@ export default async function LeaderboardPage({ params }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">{tournament.name} {tournament.year}</h1>
           <p className="text-gray-500 text-sm mt-0.5">Leaderboard — lower is better</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           {tournament.status === 'draft' && (
             <Link href={`/draft/${tournament.id}`} className="text-sm text-green-600 hover:underline">
               ← Back to Draft
@@ -111,6 +112,7 @@ export default async function LeaderboardPage({ params }: Props) {
               ✂ Make Cuts →
             </Link>
           )}
+          {tournament.status === 'active' && <RefreshScoresButton />}
         </div>
       </div>
 
