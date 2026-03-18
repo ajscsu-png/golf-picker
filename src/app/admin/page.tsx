@@ -42,6 +42,18 @@ export default function AdminPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState('');
 
+  // Swap pick
+  const [swapTournamentId, setSwapTournamentId] = useState('');
+  const [swapParticipant, setSwapParticipant] = useState('');
+  const [swapParticipants, setSwapParticipants] = useState<Array<{ name: string }>>([]);
+  const [swapPicks, setSwapPicks] = useState<Array<{ golferName: string; golferEspnId: string }>>([]);
+  const [swapOldId, setSwapOldId] = useState('');
+  const [swapNewId, setSwapNewId] = useState('');
+  const [swapNewName, setSwapNewName] = useState('');
+  const [swapField, setSwapField] = useState<Array<{ id: string; name: string }>>([]);
+  const [swapSubmitting, setSwapSubmitting] = useState(false);
+  const [swapMessage, setSwapMessage] = useState('');
+
   useEffect(() => {
     fetch('/api/tournaments')
       .then((r) => r.json())
@@ -185,6 +197,69 @@ export default function AdminPage() {
       setActiveMessage('Network error.');
     } finally {
       setActiveSubmitting(false);
+    }
+  }
+
+  async function loadSwapData(tournamentId: string) {
+    setSwapTournamentId(tournamentId);
+    setSwapParticipant('');
+    setSwapPicks([]);
+    setSwapOldId('');
+    setSwapNewId('');
+    setSwapNewName('');
+    setSwapMessage('');
+    if (!tournamentId) return;
+    const t = tournaments.find((x) => x.id === tournamentId);
+    const [pRes, fRes] = await Promise.all([
+      fetch(`/api/tournaments/${tournamentId}/participants`).then((r) => r.json()),
+      t ? fetch(`/api/espn/field/${t.espnEventId}`).then((r) => r.json()) : Promise.resolve([]),
+    ]);
+    setSwapParticipants(pRes);
+    setSwapField(fRes);
+  }
+
+  async function loadParticipantPicks(participantName: string) {
+    setSwapParticipant(participantName);
+    setSwapOldId('');
+    setSwapNewId('');
+    setSwapNewName('');
+    if (!participantName || !swapTournamentId) return;
+    const picks = await fetch(`/api/tournaments/${swapTournamentId}/picks`).then((r) => r.json());
+    setSwapPicks(picks.filter((p: { participantName: string }) => p.participantName === participantName));
+  }
+
+  async function submitSwap(e: React.FormEvent) {
+    e.preventDefault();
+    if (!swapTournamentId || !swapParticipant || !swapOldId || !swapNewId) {
+      setSwapMessage('Fill in all fields.');
+      return;
+    }
+    setSwapSubmitting(true);
+    setSwapMessage('');
+    try {
+      const res = await fetch(`/api/tournaments/${swapTournamentId}/picks/swap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantName: swapParticipant,
+          oldGolferEspnId: swapOldId,
+          newGolferEspnId: swapNewId,
+          newGolferName: swapNewName,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSwapMessage(`✅ Swapped successfully!`);
+        setSwapOldId('');
+        setSwapNewId('');
+        setSwapNewName('');
+      } else {
+        setSwapMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setSwapMessage('Network error.');
+    } finally {
+      setSwapSubmitting(false);
     }
   }
 
@@ -404,6 +479,96 @@ export default function AdminPage() {
             className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60 transition-colors"
           >
             {deleteSubmitting ? 'Deleting...' : 'Delete Tournament'}
+          </button>
+        </form>
+      </section>
+
+      {/* Section E: Swap Pick */}
+      <section className="bg-white rounded-xl border border-orange-200 p-6 space-y-5">
+        <h2 className="text-lg font-semibold text-orange-700">Swap a Pick</h2>
+        <p className="text-sm text-gray-500">Use this when a golfer withdraws and you need to replace their pick.</p>
+        <form onSubmit={submitSwap} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tournament</label>
+            <select
+              value={swapTournamentId}
+              onChange={(e) => loadSwapData(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
+              <option value="">— select —</option>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} {t.year} [{t.status}]</option>
+              ))}
+            </select>
+          </div>
+
+          {swapTournamentId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Participant</label>
+              <select
+                value={swapParticipant}
+                onChange={(e) => loadParticipantPicks(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">— select —</option>
+                {swapParticipants.map((p) => (
+                  <option key={p.name} value={p.name}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {swapParticipant && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Golfer to Replace</label>
+              <select
+                value={swapOldId}
+                onChange={(e) => setSwapOldId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">— select —</option>
+                {swapPicks.map((p) => (
+                  <option key={p.golferEspnId} value={p.golferEspnId}>{p.golferName}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {swapOldId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Replacement Golfer</label>
+              <select
+                value={swapNewId}
+                onChange={(e) => {
+                  const golfer = swapField.find((g) => g.id === e.target.value);
+                  setSwapNewId(e.target.value);
+                  setSwapNewName(golfer?.name ?? '');
+                }}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              >
+                <option value="">— select —</option>
+                {swapField
+                  .filter((g) => !swapPicks.some((p) => p.golferEspnId === g.id))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {swapMessage && (
+            <p className={`text-sm ${swapMessage.startsWith('✅') ? 'text-green-700' : 'text-red-600'}`}>
+              {swapMessage}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={swapSubmitting || !swapOldId || !swapNewId}
+            className="bg-orange-500 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 disabled:opacity-60 transition-colors"
+          >
+            {swapSubmitting ? 'Swapping...' : 'Swap Pick'}
           </button>
         </form>
       </section>

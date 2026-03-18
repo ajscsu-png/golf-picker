@@ -256,6 +256,23 @@ export async function appendPick(pick: Omit<Pick, 'id'>): Promise<Pick> {
   return { id, ...pick };
 }
 
+export async function swapPick(
+  tournamentId: string,
+  participantName: string,
+  oldGolferEspnId: string,
+  newGolferEspnId: string,
+  newGolferName: string
+): Promise<void> {
+  const allRows = await getRows('Picks');
+  const updated = allRows.map((r) => {
+    if (r[1] === tournamentId && r[5] === participantName && r[7] === oldGolferEspnId) {
+      return [r[0], r[1], r[2], r[3], r[4], r[5], newGolferName, newGolferEspnId];
+    }
+    return r;
+  });
+  await clearAndWriteRows('Picks', PICKS_HEADER, updated);
+}
+
 export async function isGolferPicked(
   tournamentId: string,
   golferEspnId: string
