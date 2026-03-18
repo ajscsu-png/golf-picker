@@ -1,0 +1,181 @@
+'use client';
+
+import { useState } from 'react';
+import type { Participant, Pick, Cut } from '@/types';
+
+interface Props {
+  tournamentId: string;
+  cutsPerPerson: number;
+  participants: Participant[];
+  picks: Pick[];
+  existingCuts: Cut[];
+}
+
+export default function CutSelector({
+  tournamentId,
+  cutsPerPerson,
+  participants,
+  picks,
+  existingCuts,
+}: Props) {
+  const [selectedParticipant, setSelectedParticipant] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+
+  function handleParticipantChange(name: string) {
+    setSelectedParticipant(name);
+    setMessage('');
+    // Pre-populate with existing cuts for this participant
+    const existing = existingCuts
+      .filter((c) => c.participantName === name)
+      .map((c) => c.golferEspnId);
+    setSelectedIds(new Set(existing));
+  }
+
+  function toggleGolfer(espnId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(espnId)) {
+        next.delete(espnId);
+      } else {
+        if (next.size >= cutsPerPerson) return prev; // at limit
+        next.add(espnId);
+      }
+      return next;
+    });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedParticipant) {
+      setMessage('Select your name first.');
+      return;
+    }
+    if (selectedIds.size === 0) {
+      setMessage('Select at least 1 golfer to cut.');
+      return;
+    }
+
+    const myPicks = picks.filter((p) => p.participantName === selectedParticipant);
+    const cuts = Array.from(selectedIds).map((id) => {
+      const pick = myPicks.find((p) => p.golferEspnId === id)!;
+      return { golferEspnId: id, golferName: pick.golferName };
+    });
+
+    setSubmitting(true);
+    setMessage('');
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/cuts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantName: selectedParticipant, cuts }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage('✅ Cuts saved!');
+      } else {
+        setMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setMessage('Network error.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const myPicks = picks.filter((p) => p.participantName === selectedParticipant);
+  const myCuts = existingCuts.filter((c) => c.participantName === selectedParticipant);
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Step 1: Select participant */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+        <label className="block text-sm font-semibold text-gray-700">Who are you?</label>
+        <select
+          value={selectedParticipant}
+          onChange={(e) => handleParticipantChange(e.target.value)}
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+        >
+          <option value="">— select your name —</option>
+          {participants.map((p) => {
+            const hasCuts = existingCuts.some((c) => c.participantName === p.name);
+            return (
+              <option key={p.name} value={p.name}>
+                {p.name}{hasCuts ? ' ✓' : ''}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      {/* Step 2: Select golfers to cut */}
+      {selectedParticipant && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-semibold text-gray-700">
+              Select {cutsPerPerson} golfer{cutsPerPerson > 1 ? 's' : ''} to cut
+            </label>
+            <span className="text-xs text-gray-400">{selectedIds.size}/{cutsPerPerson} selected</span>
+          </div>
+
+          {myPicks.length === 0 ? (
+            <p className="text-sm text-gray-400">No picks found for {selectedParticipant}.</p>
+          ) : (
+            <div className="space-y-2">
+              {myPicks.map((pick) => {
+                const isSelected = selectedIds.has(pick.golferEspnId);
+                const isDisabled = !isSelected && selectedIds.size >= cutsPerPerson;
+                return (
+                  <button
+                    key={pick.golferEspnId}
+                    type="button"
+                    onClick={() => toggleGolfer(pick.golferEspnId)}
+                    disabled={isDisabled}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm transition-colors text-left
+                      ${isSelected
+                        ? 'border-red-400 bg-red-50 text-red-700 font-medium'
+                        : isDisabled
+                          ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                      }`}
+                  >
+                    <span>{pick.golferName}</span>
+                    {isSelected && <span className="text-xs font-semibold">CUT</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Already submitted notice */}
+      {selectedParticipant && myCuts.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm text-yellow-800">
+          <p className="font-medium mb-1">Previously cut:</p>
+          <ul className="list-disc list-inside">
+            {myCuts.map((c) => <li key={c.golferEspnId}>{c.golferName}</li>)}
+          </ul>
+          <p className="mt-2 text-xs text-yellow-600">Submitting again will replace your previous cuts.</p>
+        </div>
+      )}
+
+      {message && (
+        <p className={`text-sm ${message.startsWith('✅') ? 'text-green-700' : 'text-red-600'}`}>
+          {message}
+        </p>
+      )}
+
+      {selectedParticipant && (
+        <button
+          type="submit"
+          disabled={submitting || selectedIds.size === 0}
+          className="w-full bg-red-600 text-white px-5 py-3 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+        >
+          {submitting ? 'Saving...' : `Cut ${selectedIds.size} Golfer${selectedIds.size !== 1 ? 's' : ''}`}
+        </button>
+      )}
+    </form>
+  );
+}

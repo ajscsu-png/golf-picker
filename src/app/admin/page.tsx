@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [tEspnId, setTEspnId] = useState('');
   const [tEspnName, setTEspnName] = useState('');
   const [tPicks, setTPicks] = useState('6');
+  const [tCuts, setTCuts] = useState('0');
   const [tPlayerCount, setTPlayerCount] = useState('8');
   const [tSubmitting, setTSubmitting] = useState(false);
   const [tMessage, setTMessage] = useState('');
@@ -78,6 +79,7 @@ export default function AdminPage() {
           year: tYear,
           espnEventId: tEspnId,
           picksPerPerson: tPicks,
+          cutsPerPerson: tCuts,
         }),
       });
       const data = await res.json();
@@ -216,7 +218,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Picks Per Person</label>
               <input
@@ -227,6 +229,18 @@ export default function AdminPage() {
                 onChange={(e) => setTPicks(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cuts Per Person</label>
+              <select
+                value={tCuts}
+                onChange={(e) => setTCuts(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              >
+                <option value="0">None</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Number of Players</label>

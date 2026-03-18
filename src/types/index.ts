@@ -6,7 +6,15 @@ export interface Tournament {
   year: number;
   espnEventId: string;
   status: TournamentStatus;
-  picksPerPerson: number; // 5 or 6
+  picksPerPerson: number;
+  cutsPerPerson: number; // 0 = disabled, 1 or 2
+}
+
+export interface Cut {
+  tournamentId: string;
+  participantName: string;
+  golferEspnId: string;
+  golferName: string;
 }
 
 export interface Participant {
@@ -60,7 +68,7 @@ export interface EspnEvent {
 
 export interface ParticipantLeaderboardRow {
   participant: Participant;
-  golfers: Array<GolferScore & { picked: boolean }>;
+  golfers: Array<GolferScore & { picked: boolean; dropped: boolean }>;
   totalScore: number | null;
   rank: number;
 }

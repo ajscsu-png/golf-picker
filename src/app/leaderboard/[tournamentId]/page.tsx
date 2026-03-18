@@ -4,8 +4,9 @@ import {
   getParticipants,
   getPicks,
   getScores,
+  getCuts,
 } from '@/lib/sheets';
-import type { ParticipantLeaderboardRow, GolferScore } from '@/types';
+import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
 import Link from 'next/link';
 
@@ -18,16 +19,22 @@ interface Props {
 function buildLeaderboard(
   participants: Awaited<ReturnType<typeof getParticipants>>,
   picks: Awaited<ReturnType<typeof getPicks>>,
-  scores: GolferScore[]
+  scores: GolferScore[],
+  cuts: Cut[]
 ): ParticipantLeaderboardRow[] {
   const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
 
   const rows = participants.map((participant) => {
     const myPicks = picks.filter((p) => p.participantName === participant.name);
+    const myCutIds = new Set(
+      cuts.filter((c) => c.participantName === participant.name).map((c) => c.golferEspnId)
+    );
+
     const golfers = myPicks.map((pick) => {
       const score = scoreMap.get(pick.golferEspnId);
+      const dropped = myCutIds.has(pick.golferEspnId);
       return score
-        ? { ...score, picked: true }
+        ? { ...score, picked: true, dropped }
         : {
             tournamentId: pick.tournamentId,
             golferEspnId: pick.golferEspnId,
@@ -40,10 +47,11 @@ function buildLeaderboard(
             r4: null,
             status: 'active' as const,
             picked: true,
+            dropped,
           };
     });
 
-    const scoredGolfers = golfers.filter((g) => g.totalScore !== null);
+    const scoredGolfers = golfers.filter((g) => g.totalScore !== null && !g.dropped);
     const totalScore =
       scoredGolfers.length > 0
         ? scoredGolfers.reduce((sum, g) => sum + (g.totalScore ?? 0), 0)
@@ -73,16 +81,17 @@ function buildLeaderboard(
 }
 
 export default async function LeaderboardPage({ params }: Props) {
-  const [tournament, participants, picks, scores] = await Promise.all([
+  const [tournament, participants, picks, scores, cuts] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),
     getPicks(params.tournamentId),
     getScores(params.tournamentId),
+    getCuts(params.tournamentId),
   ]);
 
   if (!tournament) notFound();
 
-  const rows = buildLeaderboard(participants, picks, scores);
+  const rows = buildLeaderboard(participants, picks, scores, cuts);
 
   return (
     <div className="space-y-6">
@@ -91,14 +100,18 @@ export default async function LeaderboardPage({ params }: Props) {
           <h1 className="text-2xl font-bold text-gray-900">{tournament.name} {tournament.year}</h1>
           <p className="text-gray-500 text-sm mt-0.5">Leaderboard — lower is better</p>
         </div>
-        {tournament.status === 'draft' && (
-          <Link
-            href={`/draft/${tournament.id}`}
-            className="text-sm text-green-600 hover:underline"
-          >
-            ← Back to Draft
-          </Link>
-        )}
+        <div className="flex gap-4">
+          {tournament.status === 'draft' && (
+            <Link href={`/draft/${tournament.id}`} className="text-sm text-green-600 hover:underline">
+              ← Back to Draft
+            </Link>
+          )}
+          {tournament.cutsPerPerson > 0 && tournament.status === 'active' && (
+            <Link href={`/cut/${tournament.id}`} className="text-sm text-red-600 hover:underline font-medium">
+              ✂ Make Cuts →
+            </Link>
+          )}
+        </div>
       </div>
 
       {rows.length === 0 ? (

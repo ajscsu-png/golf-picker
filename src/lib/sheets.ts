@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import type { Tournament, Participant, Pick, GolferScore } from '@/types';
+import type { Tournament, Participant, Pick, GolferScore, Cut } from '@/types';
 
 const SHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 
@@ -91,7 +91,7 @@ export async function setConfig(key: string, value: string): Promise<void> {
 
 // ─── Tournaments ─────────────────────────────────────────────────────────────
 
-const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person'];
+const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person'];
 
 function rowToTournament(r: string[]): Tournament {
   return {
@@ -101,6 +101,7 @@ function rowToTournament(r: string[]): Tournament {
     espnEventId: r[3],
     status: r[4] as Tournament['status'],
     picksPerPerson: parseInt(r[5], 10),
+    cutsPerPerson: parseInt(r[6] ?? '0', 10) || 0,
   };
 }
 
@@ -118,9 +119,31 @@ export async function createTournament(
   t: Omit<Tournament, 'id'>
 ): Promise<Tournament> {
   const id = crypto.randomUUID();
-  const row = [id, t.name, String(t.year), t.espnEventId, t.status, String(t.picksPerPerson)];
+  const row = [id, t.name, String(t.year), t.espnEventId, t.status, String(t.picksPerPerson), String(t.cutsPerPerson ?? 0)];
   await appendRow('Tournaments', row);
   return { id, ...t };
+}
+
+// Also update deleteTournament to include Cuts sheet
+const CUTS_HEADER = ['tournament_id', 'participant_name', 'golfer_espn_id', 'golfer_name'];
+
+export async function getCuts(tournamentId: string): Promise<Cut[]> {
+  const rows = await getRows('Cuts');
+  return rows
+    .filter((r) => r[0] === tournamentId)
+    .map((r) => ({
+      tournamentId: r[0],
+      participantName: r[1],
+      golferEspnId: r[2],
+      golferName: r[3],
+    }));
+}
+
+export async function setCuts(tournamentId: string, participantName: string, cuts: Array<{ golferEspnId: string; golferName: string }>): Promise<void> {
+  const allRows = await getRows('Cuts');
+  const otherRows = allRows.filter((r) => !(r[0] === tournamentId && r[1] === participantName));
+  const newRows = cuts.map((c) => [tournamentId, participantName, c.golferEspnId, c.golferName]);
+  await clearAndWriteRows('Cuts', CUTS_HEADER, [...otherRows, ...newRows]);
 }
 
 export async function updateTournamentStatus(
@@ -133,17 +156,19 @@ export async function updateTournamentStatus(
 }
 
 export async function deleteTournament(id: string): Promise<void> {
-  const [tRows, pRows, pickRows, scoreRows] = await Promise.all([
+  const [tRows, pRows, pickRows, scoreRows, cutRows] = await Promise.all([
     getRows('Tournaments'),
     getRows('Participants'),
     getRows('Picks'),
     getRows('Scores'),
+    getRows('Cuts'),
   ]);
   await Promise.all([
     clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, tRows.filter((r) => r[0] !== id)),
     clearAndWriteRows('Participants', PARTICIPANT_HEADER, pRows.filter((r) => r[0] !== id)),
     clearAndWriteRows('Picks', PICKS_HEADER, pickRows.filter((r) => r[1] !== id)),
     clearAndWriteRows('Scores', SCORES_HEADER, scoreRows.filter((r) => r[0] !== id)),
+    clearAndWriteRows('Cuts', CUTS_HEADER, cutRows.filter((r) => r[0] !== id)),
   ]);
 }
 

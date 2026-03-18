@@ -16,7 +16,8 @@ function scoreColor(score: number | null): string {
   return 'text-gray-700';
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, dropped: boolean) {
+  if (dropped) return <span className="text-xs bg-red-100 text-red-500 px-1.5 py-0.5 rounded">DROPPED</span>;
   if (status === 'cut') return <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">CUT</span>;
   if (status === 'wd') return <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">WD</span>;
   if (status === 'dq') return <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">DQ</span>;
@@ -75,13 +76,13 @@ export default function Leaderboard({ rows }: Props) {
                   </thead>
                   <tbody>
                     {row.golfers.map((g) => (
-                      <tr key={g.golferEspnId} className="border-t border-gray-50">
+                      <tr key={g.golferEspnId} className={`border-t border-gray-50 ${g.dropped ? 'opacity-40' : ''}`}>
                         <td className="py-2 px-5">
                           <div className="flex items-center gap-2">
-                            <span className={g.status !== 'active' ? 'text-gray-400' : 'text-gray-800'}>
+                            <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
                               {g.golferName}
                             </span>
-                            {statusBadge(g.status)}
+                            {statusBadge(g.status, g.dropped)}
                           </div>
                         </td>
                         <td className="text-center py-2 px-2 text-gray-600">{g.position || '—'}</td>
