@@ -35,6 +35,11 @@ export default function AdminPage() {
   const [activeSubmitting, setActiveSubmitting] = useState(false);
   const [activeMessage, setActiveMessage] = useState('');
 
+  // Delete tournament
+  const [deleteTournamentId, setDeleteTournamentId] = useState('');
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState('');
+
   useEffect(() => {
     fetch('/api/tournaments')
       .then((r) => r.json())
@@ -123,6 +128,33 @@ export default function AdminPage() {
       setPMessage('Network error.');
     } finally {
       setPSubmitting(false);
+    }
+  }
+
+  async function deleteTournament(e: React.FormEvent) {
+    e.preventDefault();
+    if (!deleteTournamentId) {
+      setDeleteMessage('Select a tournament.');
+      return;
+    }
+    const t = tournaments.find((x) => x.id === deleteTournamentId);
+    if (!confirm(`Delete "${t?.name ?? deleteTournamentId}" and all its picks/participants? This cannot be undone.`)) return;
+    setDeleteSubmitting(true);
+    setDeleteMessage('');
+    try {
+      const res = await fetch(`/api/tournaments/${deleteTournamentId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setDeleteMessage(`✅ Deleted.`);
+        setTournaments((prev) => prev.filter((x) => x.id !== deleteTournamentId));
+        setDeleteTournamentId('');
+      } else {
+        const data = await res.json();
+        setDeleteMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setDeleteMessage('Network error.');
+    } finally {
+      setDeleteSubmitting(false);
     }
   }
 
@@ -286,6 +318,34 @@ export default function AdminPage() {
             className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {pSubmitting ? 'Saving...' : 'Save Participants'}
+          </button>
+        </form>
+      </section>
+
+      {/* Section D: Delete Tournament */}
+      <section className="bg-white rounded-xl border border-red-200 p-6 space-y-5">
+        <h2 className="text-lg font-semibold text-red-700">Delete Tournament</h2>
+        <p className="text-sm text-gray-500">Permanently removes the tournament, all picks, participants, and scores.</p>
+        <form onSubmit={deleteTournament} className="space-y-4">
+          <select
+            value={deleteTournamentId}
+            onChange={(e) => setDeleteTournamentId(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+          >
+            <option value="">— select —</option>
+            {tournaments.map((t) => (
+              <option key={t.id} value={t.id}>{t.name} {t.year} [{t.status}]</option>
+            ))}
+          </select>
+
+          {deleteMessage && <p className="text-sm text-red-700">{deleteMessage}</p>}
+
+          <button
+            type="submit"
+            disabled={deleteSubmitting}
+            className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60 transition-colors"
+          >
+            {deleteSubmitting ? 'Deleting...' : 'Delete Tournament'}
           </button>
         </form>
       </section>

@@ -132,6 +132,21 @@ export async function updateTournamentStatus(
   await clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, updated);
 }
 
+export async function deleteTournament(id: string): Promise<void> {
+  const [tRows, pRows, pickRows, scoreRows] = await Promise.all([
+    getRows('Tournaments'),
+    getRows('Participants'),
+    getRows('Picks'),
+    getRows('Scores'),
+  ]);
+  await Promise.all([
+    clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, tRows.filter((r) => r[0] !== id)),
+    clearAndWriteRows('Participants', PARTICIPANT_HEADER, pRows.filter((r) => r[0] !== id)),
+    clearAndWriteRows('Picks', PICKS_HEADER, pickRows.filter((r) => r[1] !== id)),
+    clearAndWriteRows('Scores', SCORES_HEADER, scoreRows.filter((r) => r[0] !== id)),
+  ]);
+}
+
 // ─── Participants ─────────────────────────────────────────────────────────────
 
 const PARTICIPANT_HEADER = ['tournament_id', 'name', 'draft_position'];
