@@ -116,6 +116,7 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
         <GolferPicker
           tournamentId={tournament.id}
           espnEventId={tournament.espnEventId}
+          tournamentName={tournament.name}
           participantName={myName}
           pickedIds={pickedIds}
           onPickSubmitted={refreshPicks}

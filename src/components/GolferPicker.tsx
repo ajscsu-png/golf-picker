@@ -2,23 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import type { EspnGolfer } from '@/types';
+import type { GolferOdds } from '@/app/api/odds/route';
 
 interface Props {
   tournamentId: string;
   espnEventId: string;
+  tournamentName: string;
   participantName: string;
   pickedIds: Set<string>;
   onPickSubmitted: () => void;
 }
 
+function normalizeName(s: string): string {
+  return s.toLowerCase().replace(/[^a-z ]/g, '').trim();
+}
+
 export default function GolferPicker({
   tournamentId,
   espnEventId,
+  tournamentName,
   participantName,
   pickedIds,
   onPickSubmitted,
 }: Props) {
   const [field, setField] = useState<EspnGolfer[]>([]);
+  const [oddsMap, setOddsMap] = useState<Map<string, GolferOdds>>(new Map());
+  const [sortBy, setSortBy] = useState<'odds' | 'alpha'>('odds');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<EspnGolfer | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -28,20 +37,39 @@ export default function GolferPicker({
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/espn/field/${espnEventId}`)
-      .then((r) => r.json())
-      .then((data: EspnGolfer[]) => {
-        setField(data.sort((a, b) => a.name.localeCompare(b.name)));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [espnEventId]);
+    Promise.all([
+      fetch(`/api/espn/field/${espnEventId}`).then((r) => r.json()) as Promise<EspnGolfer[]>,
+      fetch(`/api/odds?tournament=${encodeURIComponent(tournamentName)}`).then((r) => r.json()).catch(() => []) as Promise<GolferOdds[]>,
+    ]).then(([fieldData, oddsData]) => {
+      // Build odds lookup by normalized name
+      const map = new Map<string, GolferOdds>();
+      for (const o of oddsData) {
+        map.set(normalizeName(o.name), o);
+      }
+      setOddsMap(map);
+      setField(fieldData);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [espnEventId, tournamentName]);
 
-  const available = field.filter(
-    (g) =>
-      !pickedIds.has(g.id) &&
-      (search === '' || g.name.toLowerCase().includes(search.toLowerCase()))
-  );
+  function getOdds(golfer: EspnGolfer): GolferOdds | undefined {
+    return oddsMap.get(normalizeName(golfer.name));
+  }
+
+  const available = field
+    .filter(
+      (g) =>
+        !pickedIds.has(g.id) &&
+        (search === '' || g.name.toLowerCase().includes(search.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (sortBy === 'odds') {
+        const oa = getOdds(a)?.impliedProbability ?? -1;
+        const ob = getOdds(b)?.impliedProbability ?? -1;
+        if (oa !== ob) return ob - oa; // favorites first
+      }
+      return a.name.localeCompare(b.name);
+    });
 
   async function submitPick() {
     if (!selected) return;
@@ -117,29 +145,42 @@ export default function GolferPicker({
         </div>
       ) : (
         <>
-          <input
-            type="text"
-            placeholder="Search golfer name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-green-400"
-          />
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              placeholder="Search golfer name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+            <button
+              type="button"
+              onClick={() => setSortBy((s) => s === 'odds' ? 'alpha' : 'odds')}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+            >
+              {sortBy === 'odds' ? '📊 Odds' : '🔤 A–Z'}
+            </button>
+          </div>
           <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
             {available.length === 0 ? (
               <p className="text-center text-gray-400 py-6 text-sm">No golfers found</p>
             ) : (
-              available.map((g) => (
-                <button
-                  key={g.id}
-                  onClick={() => { setSelected(g); setConfirming(true); }}
-                  className="w-full text-left px-4 py-3 hover:bg-green-50 transition-colors flex justify-between items-center text-sm"
-                >
-                  <span className="font-medium text-gray-800">{g.name}</span>
-                  {g.worldRanking && (
-                    <span className="text-xs text-gray-400">WR #{g.worldRanking}</span>
-                  )}
-                </button>
-              ))
+              available.map((g) => {
+                const odds = getOdds(g);
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => { setSelected(g); setConfirming(true); }}
+                    className="w-full text-left px-4 py-3 hover:bg-green-50 transition-colors flex justify-between items-center text-sm"
+                  >
+                    <span className="font-medium text-gray-800">{g.name}</span>
+                    <span className="text-xs text-gray-400 flex gap-2">
+                      {odds && <span className="text-blue-500 font-medium">{odds.oddsDisplay}</span>}
+                      {g.worldRanking && <span>WR #{g.worldRanking}</span>}
+                    </span>
+                  </button>
+                );
+              })
             )}
           </div>
         </>
