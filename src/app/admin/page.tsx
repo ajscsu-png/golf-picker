@@ -188,9 +188,19 @@ export default function AdminPage() {
     }
   }
 
+  async function logout() {
+    await fetch('/api/admin/auth', { method: 'DELETE' });
+    window.location.href = '/admin/login';
+  }
+
   return (
     <div className="space-y-10">
-      <h1 className="text-2xl font-bold">Admin</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Admin</h1>
+        <button onClick={logout} className="text-sm text-gray-400 hover:text-gray-600">
+          Log out
+        </button>
+      </div>
 
       {/* Section A: Create Tournament */}
       <section className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
