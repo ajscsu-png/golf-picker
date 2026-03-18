@@ -322,7 +322,23 @@ export default function AdminPage() {
           </div>
 
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">Participants (draft order = pick position)</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700">Participants (draft order = pick position)</p>
+              <button
+                type="button"
+                onClick={() => {
+                  const names = participants.map((p) => p.name).filter((n) => n.trim() !== '');
+                  for (let i = names.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [names[i], names[j]] = [names[j], names[i]];
+                  }
+                  setParticipants(participants.map((p, i) => ({ ...p, name: names[i] ?? '' })));
+                }}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                🎲 Randomize Order
+              </button>
+            </div>
             {participants.map((p, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <span className="text-sm text-gray-400 w-6 text-right">{idx + 1}.</span>
