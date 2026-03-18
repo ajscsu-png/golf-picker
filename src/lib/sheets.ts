@@ -125,10 +125,10 @@ export async function createTournament(
 }
 
 // Also update deleteTournament to include Cuts sheet
-const CUTS_HEADER = ['tournament_id', 'participant_name', 'golfer_espn_id', 'golfer_name'];
+const DROPS_HEADER = ['tournament_id', 'participant_name', 'golfer_espn_id', 'golfer_name'];
 
 export async function getCuts(tournamentId: string): Promise<Cut[]> {
-  const rows = await getRows('Cuts');
+  const rows = await getRows('Drops');
   return rows
     .filter((r) => r[0] === tournamentId)
     .map((r) => ({
@@ -140,10 +140,10 @@ export async function getCuts(tournamentId: string): Promise<Cut[]> {
 }
 
 export async function setCuts(tournamentId: string, participantName: string, cuts: Array<{ golferEspnId: string; golferName: string }>): Promise<void> {
-  const allRows = await getRows('Cuts');
+  const allRows = await getRows('Drops');
   const otherRows = allRows.filter((r) => !(r[0] === tournamentId && r[1] === participantName));
   const newRows = cuts.map((c) => [tournamentId, participantName, c.golferEspnId, c.golferName]);
-  await clearAndWriteRows('Cuts', CUTS_HEADER, [...otherRows, ...newRows]);
+  await clearAndWriteRows('Drops', DROPS_HEADER, [...otherRows, ...newRows]);
 }
 
 export async function updateTournamentStatus(
@@ -161,14 +161,14 @@ export async function deleteTournament(id: string): Promise<void> {
     getRows('Participants'),
     getRows('Picks'),
     getRows('Scores'),
-    getRows('Cuts'),
+    getRows('Drops'),
   ]);
   await Promise.all([
     clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, tRows.filter((r) => r[0] !== id)),
     clearAndWriteRows('Participants', PARTICIPANT_HEADER, pRows.filter((r) => r[0] !== id)),
     clearAndWriteRows('Picks', PICKS_HEADER, pickRows.filter((r) => r[1] !== id)),
     clearAndWriteRows('Scores', SCORES_HEADER, scoreRows.filter((r) => r[0] !== id)),
-    clearAndWriteRows('Cuts', CUTS_HEADER, cutRows.filter((r) => r[0] !== id)),
+    clearAndWriteRows('Drops', DROPS_HEADER, cutRows.filter((r) => r[0] !== id)),
   ]);
 }
 
