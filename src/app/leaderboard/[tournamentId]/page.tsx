@@ -5,10 +5,12 @@ import {
   getPicks,
   getScores,
   getCuts,
+  getTrashMessages,
 } from '@/lib/sheets';
 import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
 import RefreshScoresButton from '@/components/RefreshScoresButton';
+import TrashTalk from '@/components/TrashTalk';
 import Link from 'next/link';
 
 export const revalidate = 60;
@@ -82,12 +84,13 @@ function buildLeaderboard(
 }
 
 export default async function LeaderboardPage({ params }: Props) {
-  const [tournament, participants, picks, scores, cuts] = await Promise.all([
+  const [tournament, participants, picks, scores, cuts, trashMessages] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),
     getPicks(params.tournamentId),
     getScores(params.tournamentId),
     getCuts(params.tournamentId),
+    getTrashMessages(params.tournamentId),
   ]);
 
   if (!tournament) notFound();
@@ -129,6 +132,14 @@ export default async function LeaderboardPage({ params }: Props) {
         </div>
       ) : (
         <Leaderboard rows={rows} />
+      )}
+
+      {(tournament.status === 'active' || tournament.status === 'completed') && (
+        <TrashTalk
+          tournamentId={tournament.id}
+          participants={participants}
+          initialMessages={trashMessages}
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ParticipantLeaderboardRow } from '@/types';
+import type { ParticipantLeaderboardRow, GolferScore } from '@/types';
 
 function scoreDisplay(score: number | null): string {
   if (score === null) return '—';
@@ -14,6 +14,34 @@ function scoreColor(score: number | null): string {
   if (score < 0) return 'text-red-600 font-semibold';
   if (score === 0) return 'text-gray-700';
   return 'text-gray-700';
+}
+
+function getGrade(g: GolferScore & { picked: boolean; dropped: boolean }): string | null {
+  if (g.dropped) return null;
+  if (g.status === 'cut' || g.status === 'wd' || g.status === 'dq') return 'F';
+  if (g.totalScore === null) return null;
+  const pos = parseInt(g.position?.replace(/[^0-9]/g, '') ?? '', 10);
+  if (isNaN(pos)) return null;
+  if (pos <= 5) return 'A';
+  if (pos <= 15) return 'B';
+  if (pos <= 30) return 'C';
+  return 'D';
+}
+
+function gradeBadge(grade: string | null) {
+  if (!grade) return null;
+  const styles: Record<string, string> = {
+    A: 'bg-green-100 text-green-700',
+    B: 'bg-blue-100 text-blue-700',
+    C: 'bg-yellow-100 text-yellow-700',
+    D: 'bg-gray-100 text-gray-600',
+    F: 'bg-red-100 text-red-600',
+  };
+  return (
+    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${styles[grade] ?? 'bg-gray-100 text-gray-500'}`}>
+      {grade}
+    </span>
+  );
 }
 
 function statusBadge(status: string, dropped: boolean) {
@@ -78,11 +106,12 @@ export default function Leaderboard({ rows }: Props) {
                     {row.golfers.map((g) => (
                       <tr key={g.golferEspnId} className={`border-t border-gray-50 ${g.dropped ? 'opacity-40' : ''}`}>
                         <td className="py-2 px-5">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
                               {g.golferName}
                             </span>
                             {statusBadge(g.status, g.dropped)}
+                            {g.totalScore !== null && gradeBadge(getGrade(g))}
                           </div>
                         </td>
                         <td className="text-center py-2 px-2 text-gray-600">{g.position || '—'}</td>

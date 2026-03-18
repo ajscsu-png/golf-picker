@@ -5,11 +5,20 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Golf Major Picker',
   description: 'Snake draft and live leaderboard for the 4 major golf tournaments',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Golf Picker',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className="min-h-screen bg-gray-50 text-gray-900">
         <nav className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="max-w-4xl mx-auto flex items-center justify-between">

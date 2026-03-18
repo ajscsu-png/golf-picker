@@ -322,3 +322,40 @@ export async function upsertScores(incoming: GolferScore[]): Promise<void> {
   const newRows = incoming.map(scoreToRow);
   await clearAndWriteRows('Scores', SCORES_HEADER, [...otherRows, ...newRows]);
 }
+
+// ─── Trash Talk ──────────────────────────────────────────────────────────────
+
+const TRASH_HEADER = ['id', 'tournament_id', 'participant_name', 'message', 'created_at'];
+
+export interface TrashMessage {
+  id: string;
+  tournamentId: string;
+  participantName: string;
+  message: string;
+  createdAt: string;
+}
+
+export async function getTrashMessages(tournamentId: string): Promise<TrashMessage[]> {
+  const rows = await getRows('Trash');
+  return rows
+    .filter((r) => r[1] === tournamentId)
+    .map((r) => ({
+      id: r[0],
+      tournamentId: r[1],
+      participantName: r[2],
+      message: r[3],
+      createdAt: r[4],
+    }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function addTrashMessage(
+  tournamentId: string,
+  participantName: string,
+  message: string
+): Promise<TrashMessage> {
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  await appendRow('Trash', [id, tournamentId, participantName, message, createdAt]);
+  return { id, tournamentId, participantName, message, createdAt };
+}

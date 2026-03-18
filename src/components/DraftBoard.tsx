@@ -126,7 +126,9 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
       {/* Snake draft grid */}
       <div>
         <h3 className="text-base font-semibold text-gray-700 mb-3">Draft Board</h3>
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
+
+        {/* Desktop table — hidden on small screens */}
+        <div className="hidden sm:block overflow-x-auto rounded-xl border border-gray-200">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -184,6 +186,66 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card view — shown only on small screens */}
+        <div className="sm:hidden space-y-3">
+          {Array.from({ length: tournament.picksPerPerson }, (_, roundIdx) => {
+            const round = roundIdx + 1;
+            const roundSlots = draftOrder.filter((s) => s.roundNumber === round);
+            const slotByParticipant = new Map(
+              roundSlots.map((s) => [s.participantName, s])
+            );
+            return (
+              <div key={round} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="bg-gray-50 border-b border-gray-200 px-4 py-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Round {round}
+                  </span>
+                </div>
+                <ul className="divide-y divide-gray-100">
+                  {participants.map((p) => {
+                    const slot = slotByParticipant.get(p.name);
+                    if (!slot) return null;
+                    const pick = getPickForSlot(slot);
+                    const isCurrentSlot =
+                      onTheClock?.overallPickNumber === slot.overallPickNumber;
+                    return (
+                      <li
+                        key={p.name}
+                        className={`flex items-center justify-between px-4 py-2.5 ${
+                          isCurrentSlot ? 'bg-green-50' : ''
+                        }`}
+                      >
+                        <span
+                          className={`text-sm font-medium ${
+                            p.name === myName ? 'text-blue-700' : 'text-gray-700'
+                          }`}
+                        >
+                          {p.name}
+                        </span>
+                        <span
+                          className={`text-sm ${
+                            isCurrentSlot
+                              ? 'text-green-700 font-semibold animate-pulse'
+                              : pick
+                              ? 'text-gray-800'
+                              : 'text-gray-300'
+                          }`}
+                        >
+                          {pick
+                            ? pick.golferName
+                            : isCurrentSlot
+                            ? 'ON CLOCK'
+                            : '—'}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
