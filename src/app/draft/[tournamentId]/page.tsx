@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTournamentById, getParticipants, getPicks } from '@/lib/sheets';
 import DraftBoard from '@/components/DraftBoard';
-import GolfJoke from '@/components/GolfJoke';
 import Link from 'next/link';
 
 export const revalidate = 0; // always dynamic for the draft
@@ -32,7 +31,6 @@ export default async function DraftPage({ params }: Props) {
 
   return (
     <div className="space-y-4">
-      <GolfJoke />
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{tournament.name} {tournament.year}</h1>

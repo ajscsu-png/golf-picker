@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import GolfJoke from '@/components/GolfJoke';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -34,7 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
           </div>
         </nav>
-        <main className="max-w-4xl mx-auto px-4 py-8">
+        <main className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+          <GolfJoke />
           {children}
         </main>
       </body>

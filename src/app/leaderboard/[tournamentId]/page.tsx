@@ -11,6 +11,8 @@ import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
 import RefreshScoresButton from '@/components/RefreshScoresButton';
 import TrashTalk from '@/components/TrashTalk';
+import TournamentFactsCard from '@/components/TournamentFacts';
+import { getTournamentFacts } from '@/lib/tournamentFacts';
 import Link from 'next/link';
 
 export const revalidate = 60;
@@ -96,6 +98,7 @@ export default async function LeaderboardPage({ params }: Props) {
   if (!tournament) notFound();
 
   const rows = buildLeaderboard(participants, picks, scores, cuts);
+  const facts = getTournamentFacts(tournament.name);
 
   return (
     <div className="space-y-6">
@@ -118,6 +121,8 @@ export default async function LeaderboardPage({ params }: Props) {
           {tournament.status === 'active' && <RefreshScoresButton />}
         </div>
       </div>
+
+      {facts && <TournamentFactsCard facts={facts} />}
 
       {rows.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
