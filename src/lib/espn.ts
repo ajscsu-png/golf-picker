@@ -146,7 +146,22 @@ export async function getLeaderboard(
   const event = events.find((e) => String(e.id) === String(eventId)) ?? events[0];
   if (!event) return [];
   const sbCompetitors = ((event.competitions as Array<Record<string, unknown>>)?.[0]?.competitors ?? []) as Array<Record<string, unknown>>;
-  return sbCompetitors.map((c) => parseScoreboardCompetitor(c, eventId));
+  const parsed = sbCompetitors.map((c) => parseScoreboardCompetitor(c, eventId));
+
+  // Compute tied positions: group by totalScore, assign "T{minOrder}" when tied
+  const scoreGroups = new Map<string, number[]>();
+  sbCompetitors.forEach((c, i) => {
+    const key = String(c.score ?? '');
+    if (!scoreGroups.has(key)) scoreGroups.set(key, []);
+    scoreGroups.get(key)!.push(i);
+  });
+  scoreGroups.forEach((indices) => {
+    const minOrder = Math.min(...indices.map((i) => (sbCompetitors[i].order as number) ?? 999));
+    const prefix = indices.length > 1 ? `T${minOrder}` : String(minOrder);
+    indices.forEach((i) => { parsed[i].position = prefix; });
+  });
+
+  return parsed;
 }
 
 function parseSummaryCompetitor(c: Record<string, unknown>, tournamentId: string): GolferScore {
@@ -194,18 +209,11 @@ function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: str
     }
   }
 
-  const position = c.position as { displayName?: string } | undefined;
-  const positionStr = String(
-    ((c.status as Record<string, unknown>)?.type as Record<string, unknown>)?.shortDetail ??
-    position?.displayName ??
-    ''
-  );
-
   return {
     tournamentId,
     golferEspnId: String(c.id ?? ''),
     golferName: String(athlete?.displayName ?? athlete?.fullName ?? ''),
-    position: positionStr,
+    position: String(c.order ?? ''), // ties computed after all competitors are parsed
     totalScore: parseScore(String(c.score ?? '')),
     r1: roundMap.get(1) ?? null,
     r2: roundMap.get(2) ?? null,
