@@ -104,39 +104,39 @@ export default function GolferPicker({
 
   if (loading) {
     return (
-      <div className="mt-6 p-4 bg-green-900/40 border border-green-800/60 rounded-xl text-center text-green-400">
+      <div className="mt-6 p-4 bg-gray-50 rounded-xl text-center text-gray-500">
         Loading field...
       </div>
     );
   }
 
   return (
-    <div className="mt-6 bg-green-900/60 border border-green-600/60 rounded-xl p-5">
-      <h3 className="text-lg font-bold text-green-100 mb-1">
+    <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-5">
+      <h3 className="text-lg font-bold text-green-800 mb-1">
         🟢 {participantName} — You&apos;re on the clock!
       </h3>
-      <p className="text-sm text-green-400 mb-4">Select your golfer below.</p>
+      <p className="text-sm text-green-700 mb-4">Select your golfer below.</p>
 
       {error && (
-        <div className="mb-3 p-3 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300 text-sm">
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
         </div>
       )}
 
       {confirming && selected ? (
-        <div className="bg-green-950/60 border border-green-700 rounded-lg p-4">
-          <p className="font-semibold text-green-100">Confirm pick: <span className="text-green-300">{selected.name}</span>?</p>
+        <div className="bg-white border border-green-300 rounded-lg p-4">
+          <p className="font-semibold text-gray-800">Confirm pick: <span className="text-green-700">{selected.name}</span>?</p>
           <div className="flex gap-3 mt-4">
             <button
               onClick={submitPick}
               disabled={submitting}
-              className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-500 disabled:opacity-60 transition-colors"
+              className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 disabled:opacity-60 transition-colors"
             >
               {submitting ? 'Submitting...' : 'Confirm Pick'}
             </button>
             <button
               onClick={() => { setConfirming(false); setSelected(null); }}
-              className="flex-1 bg-green-900 text-green-300 py-2 rounded-lg font-medium hover:bg-green-800 border border-green-700 transition-colors"
+              className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
             >
               Cancel
             </button>
@@ -150,19 +150,19 @@ export default function GolferPicker({
               placeholder="Search golfer name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="flex-1 border border-green-700 bg-green-950/60 text-green-100 placeholder:text-green-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
             />
             <button
               type="button"
               onClick={() => setSortBy((s) => s === 'odds' ? 'alpha' : 'odds')}
-              className="border border-green-700 bg-green-900/40 rounded-lg px-3 py-2 text-xs text-green-300 hover:bg-green-800/60 whitespace-nowrap transition-colors"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 whitespace-nowrap"
             >
               {sortBy === 'odds' ? '📊 Odds' : '🔤 A–Z'}
             </button>
           </div>
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-green-800/60 bg-green-950/60 divide-y divide-green-900/60">
+          <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
             {available.length === 0 ? (
-              <p className="text-center text-green-600 py-6 text-sm">No golfers found</p>
+              <p className="text-center text-gray-400 py-6 text-sm">No golfers found</p>
             ) : (
               available.map((g) => {
                 const odds = getOdds(g);
@@ -170,11 +170,11 @@ export default function GolferPicker({
                   <button
                     key={g.id}
                     onClick={() => { setSelected(g); setConfirming(true); }}
-                    className="w-full text-left px-4 py-3 hover:bg-green-800/40 transition-colors flex justify-between items-center text-sm"
+                    className="w-full text-left px-4 py-3 hover:bg-green-50 transition-colors flex justify-between items-center text-sm"
                   >
-                    <span className="font-medium text-green-100">{g.name}</span>
-                    <span className="text-xs text-green-600 flex gap-2">
-                      {odds && <span className="text-amber-400 font-medium">{odds.oddsDisplay}</span>}
+                    <span className="font-medium text-gray-800">{g.name}</span>
+                    <span className="text-xs text-gray-400 flex gap-2">
+                      {odds && <span className="text-blue-500 font-medium">{odds.oddsDisplay}</span>}
                       {g.worldRanking && <span>WR #{g.worldRanking}</span>}
                     </span>
                   </button>
