@@ -10,10 +10,10 @@ function scoreDisplay(score: number | null): string {
 }
 
 function scoreColor(score: number | null): string {
-  if (score === null) return 'text-gray-400';
-  if (score < 0) return 'text-red-600 font-semibold';
-  if (score === 0) return 'text-gray-700';
-  return 'text-gray-700';
+  if (score === null) return 'text-green-700';
+  if (score < 0) return 'text-red-400 font-semibold';
+  if (score === 0) return 'text-green-300';
+  return 'text-green-500';
 }
 
 function getGrade(g: GolferScore & { picked: boolean; dropped: boolean }): string | null {
@@ -31,11 +31,11 @@ function getGrade(g: GolferScore & { picked: boolean; dropped: boolean }): strin
 function gradeBadge(grade: string | null) {
   if (!grade) return null;
   const styles: Record<string, string> = {
-    A: 'bg-green-100 text-green-700',
-    B: 'bg-blue-100 text-blue-700',
-    C: 'bg-yellow-100 text-yellow-700',
-    D: 'bg-gray-100 text-gray-600',
-    F: 'bg-red-100 text-red-600',
+    A: 'bg-green-500/20 text-green-300',
+    B: 'bg-blue-500/20 text-blue-300',
+    C: 'bg-yellow-500/20 text-yellow-300',
+    D: 'bg-white/10 text-gray-400',
+    F: 'bg-red-500/20 text-red-400',
   };
   return (
     <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${styles[grade] ?? 'bg-gray-100 text-gray-500'}`}>
@@ -45,10 +45,10 @@ function gradeBadge(grade: string | null) {
 }
 
 function statusBadge(status: string, dropped: boolean) {
-  if (dropped) return <span className="text-xs bg-red-100 text-red-500 px-1.5 py-0.5 rounded">DROPPED</span>;
-  if (status === 'cut') return <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">CUT</span>;
-  if (status === 'wd') return <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">WD</span>;
-  if (status === 'dq') return <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">DQ</span>;
+  if (dropped) return <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">DROPPED</span>;
+  if (status === 'cut') return <span className="text-xs bg-white/10 text-gray-400 px-1.5 py-0.5 rounded">CUT</span>;
+  if (status === 'wd') return <span className="text-xs bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded">WD</span>;
+  if (status === 'dq') return <span className="text-xs bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">DQ</span>;
   return null;
 }
 
@@ -73,15 +73,15 @@ export default function Leaderboard({ rows }: Props) {
       {rows.map((row) => {
         const isExpanded = expanded.has(row.participant.name);
         return (
-          <div key={row.participant.name} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div key={row.participant.name} className="bg-green-900/40 rounded-xl border border-green-800/60 overflow-hidden hover:border-green-600/60 transition-colors">
             <button
               onClick={() => toggle(row.participant.name)}
-              className="w-full flex items-center gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-5 py-4 hover:bg-green-800/30 transition-colors text-left"
             >
-              <span className="text-2xl font-bold text-gray-300 w-8 flex-shrink-0 text-center">
+              <span className="text-2xl font-bold text-green-700 w-8 flex-shrink-0 text-center">
                 {row.rank}
               </span>
-              <span className="flex-1 font-semibold text-gray-900">{row.participant.name}</span>
+              <span className="flex-1 font-semibold text-white">{row.participant.name}</span>
               <span className={`text-xl font-bold ${scoreColor(row.totalScore)}`}>
                 {scoreDisplay(row.totalScore)}
               </span>
@@ -89,10 +89,10 @@ export default function Leaderboard({ rows }: Props) {
             </button>
 
             {isExpanded && (
-              <div className="border-t border-gray-100">
+              <div className="border-t border-green-800/60">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gray-50 text-xs text-gray-500">
+                    <tr className="bg-green-950/60 text-xs text-green-400">
                       <th className="text-left py-2 px-5">Golfer</th>
                       <th className="text-center py-2 px-2">Pos</th>
                       <th className="text-center py-2 px-2">Tot</th>
@@ -104,24 +104,24 @@ export default function Leaderboard({ rows }: Props) {
                   </thead>
                   <tbody>
                     {row.golfers.map((g) => (
-                      <tr key={g.golferEspnId} className={`border-t border-gray-50 ${g.dropped ? 'opacity-40' : ''}`}>
+                      <tr key={g.golferEspnId} className={`border-t border-green-900/60 ${g.dropped ? 'opacity-40' : ''}`}>
                         <td className="py-2 px-5">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
+                            <span className={g.status !== 'active' || g.dropped ? 'text-green-700 line-through' : 'text-green-100'}>
                               {g.golferName}
                             </span>
                             {statusBadge(g.status, g.dropped)}
                             {g.totalScore !== null && gradeBadge(getGrade(g))}
                           </div>
                         </td>
-                        <td className="text-center py-2 px-2 text-gray-600">{g.position || '—'}</td>
+                        <td className="text-center py-2 px-2 text-green-400">{g.position || '—'}</td>
                         <td className={`text-center py-2 px-2 ${scoreColor(g.totalScore)}`}>
                           {scoreDisplay(g.totalScore)}
                         </td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r1 ?? '—'}</td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r2 ?? '—'}</td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r3 ?? '—'}</td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r4 ?? '—'}</td>
+                        <td className="text-center py-2 px-2 text-green-600">{g.r1 ?? '—'}</td>
+                        <td className="text-center py-2 px-2 text-green-600">{g.r2 ?? '—'}</td>
+                        <td className="text-center py-2 px-2 text-green-600">{g.r3 ?? '—'}</td>
+                        <td className="text-center py-2 px-2 text-green-600">{g.r4 ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>
