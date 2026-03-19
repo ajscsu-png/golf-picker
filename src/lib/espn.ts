@@ -128,46 +128,91 @@ export async function getLeaderboard(
     ? { cache: 'no-store' }
     : { next: { revalidate: 60 } };
 
-  const res = await fetch(`${SUMMARY_BASE}?event=${eventId}`, fetchOptions);
-  if (!res.ok) return [];
-  const data = await res.json() as Record<string, unknown>;
-  const competitors = extractCompetitors(data);
-  const tournamentId = eventId; // caller will replace with real tournament id
+  // Try summary endpoint first (has full per-round data)
+  const summaryRes = await fetch(`${SUMMARY_BASE}?event=${eventId}`, fetchOptions);
+  if (summaryRes.ok) {
+    const data = await summaryRes.json() as Record<string, unknown>;
+    const competitors = extractCompetitors(data);
+    if (competitors.length > 0) {
+      return competitors.map((c) => parseSummaryCompetitor(c, eventId));
+    }
+  }
 
-  return competitors.map((c) => {
-    const athlete = c.athlete as Record<string, unknown> | undefined;
-    const linescores = (c.linescores as Array<Record<string, unknown>>) ?? [];
-    const statistics = (c.statistics as Array<Record<string, unknown>>) ?? [];
+  // Fallback: scoreboard endpoint (summary can be unavailable during live rounds)
+  const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${eventId}`, fetchOptions);
+  if (!scoreboardRes.ok) return [];
+  const sbData = await scoreboardRes.json() as Record<string, unknown>;
+  const events = (sbData.events as Array<Record<string, unknown>>) ?? [];
+  const event = events.find((e) => String(e.id) === String(eventId)) ?? events[0];
+  if (!event) return [];
+  const sbCompetitors = ((event.competitions as Array<Record<string, unknown>>)?.[0]?.competitors ?? []) as Array<Record<string, unknown>>;
+  return sbCompetitors.map((c) => parseScoreboardCompetitor(c, eventId));
+}
 
-    const totalStat = statistics.find(
-      (s) => (s.name as string)?.toLowerCase() === 'score' ||
-              (s.abbreviation as string)?.toLowerCase() === 'tot'
-    );
+function parseSummaryCompetitor(c: Record<string, unknown>, tournamentId: string): GolferScore {
+  const athlete = c.athlete as Record<string, unknown> | undefined;
+  const linescores = (c.linescores as Array<Record<string, unknown>>) ?? [];
+  const statistics = (c.statistics as Array<Record<string, unknown>>) ?? [];
 
-    const rounds = linescores.slice(0, 4).map((ls) =>
-      parseScore(String(ls.value ?? ls.displayValue ?? ''))
-    );
-    while (rounds.length < 4) rounds.push(null);
+  const totalStat = statistics.find(
+    (s) => (s.name as string)?.toLowerCase() === 'score' ||
+            (s.abbreviation as string)?.toLowerCase() === 'tot'
+  );
 
-    const status = c.status as { type?: { shortDetail?: string } } | undefined;
-    const position = c.position as { displayName?: string } | undefined;
-    const positionStr = String(status?.type?.shortDetail ?? position?.displayName ?? '');
+  const rounds = linescores.slice(0, 4).map((ls) =>
+    parseScore(String(ls.value ?? ls.displayValue ?? ''))
+  );
+  while (rounds.length < 4) rounds.push(null);
 
-    return {
-      tournamentId,
-      golferEspnId: String(c.id ?? ''),
-      golferName: String(athlete?.displayName ?? ''),
-      position: positionStr,
-      totalScore: parseScore(
-        String(totalStat?.displayValue ?? totalStat?.value ?? '')
-      ),
-      r1: rounds[0],
-      r2: rounds[1],
-      r3: rounds[2],
-      r4: rounds[3],
-      status: parseStatus(c),
-    } satisfies GolferScore;
-  });
+  const status = c.status as { type?: { shortDetail?: string } } | undefined;
+  const position = c.position as { displayName?: string } | undefined;
+  const positionStr = String(status?.type?.shortDetail ?? position?.displayName ?? '');
+
+  return {
+    tournamentId,
+    golferEspnId: String(c.id ?? ''),
+    golferName: String(athlete?.displayName ?? ''),
+    position: positionStr,
+    totalScore: parseScore(String(totalStat?.displayValue ?? totalStat?.value ?? '')),
+    r1: rounds[0],
+    r2: rounds[1],
+    r3: rounds[2],
+    r4: rounds[3],
+    status: parseStatus(c),
+  };
+}
+
+function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: string): GolferScore {
+  const athlete = c.athlete as Record<string, unknown> | undefined;
+  // Scoreboard linescores: one entry per round, period=round number, displayValue=to-par score
+  const linescores = (c.linescores as Array<Record<string, unknown>>) ?? [];
+  const roundMap = new Map<number, number | null>();
+  for (const ls of linescores) {
+    const period = typeof ls.period === 'number' ? ls.period : null;
+    if (period && period >= 1 && period <= 4) {
+      roundMap.set(period, parseScore(String(ls.displayValue ?? '')));
+    }
+  }
+
+  const position = c.position as { displayName?: string } | undefined;
+  const positionStr = String(
+    ((c.status as Record<string, unknown>)?.type as Record<string, unknown>)?.shortDetail ??
+    position?.displayName ??
+    ''
+  );
+
+  return {
+    tournamentId,
+    golferEspnId: String(c.id ?? ''),
+    golferName: String(athlete?.displayName ?? athlete?.fullName ?? ''),
+    position: positionStr,
+    totalScore: parseScore(String(c.score ?? '')),
+    r1: roundMap.get(1) ?? null,
+    r2: roundMap.get(2) ?? null,
+    r3: roundMap.get(3) ?? null,
+    r4: roundMap.get(4) ?? null,
+    status: parseStatus(c),
+  };
 }
 
 function extractCompetitors(data: Record<string, unknown>): Array<Record<string, unknown>> {
