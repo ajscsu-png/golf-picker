@@ -21,6 +21,7 @@ export default function AdminPage() {
   const [tPicks, setTPicks] = useState('6');
   const [tCuts, setTCuts] = useState('0');
   const [tIsMajor, setTIsMajor] = useState(false);
+  const [tHasSingleDraft, setTHasSingleDraft] = useState(false);
   const [tPlayerCount, setTPlayerCount] = useState('8');
   const [tSubmitting, setTSubmitting] = useState(false);
   const [tMessage, setTMessage] = useState('');
@@ -94,6 +95,7 @@ export default function AdminPage() {
           picksPerPerson: tPicks,
           cutsPerPerson: tCuts,
           isMajor: tIsMajor,
+          hasSingleDraft: tHasSingleDraft,
         }),
       });
       const data = await res.json();
@@ -315,6 +317,19 @@ export default function AdminPage() {
             />
             <label htmlFor="isMajor" className="text-sm font-medium text-gray-700">
               Major Tournament <span className="text-gray-400 font-normal">(counts toward all-time stats)</span>
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="hasSingleDraft"
+              checked={tHasSingleDraft}
+              onChange={(e) => setTHasSingleDraft(e.target.checked)}
+              className="w-4 h-4 accent-green-600"
+            />
+            <label htmlFor="hasSingleDraft" className="text-sm font-medium text-gray-700">
+              Single Golfer Draft <span className="text-gray-400 font-normal">(one pick each before the snake; last pick goes first)</span>
             </label>
           </div>
 

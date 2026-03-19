@@ -9,6 +9,7 @@ export interface Tournament {
   picksPerPerson: number;
   cutsPerPerson: number; // 0 = disabled, 1 or 2
   isMajor: boolean;
+  hasSingleDraft: boolean; // prepends a single-golfer round before the snake
 }
 
 export interface Cut {

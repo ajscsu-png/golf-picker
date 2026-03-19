@@ -91,7 +91,7 @@ export async function setConfig(key: string, value: string): Promise<void> {
 
 // ─── Tournaments ─────────────────────────────────────────────────────────────
 
-const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person', 'is_major'];
+const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person', 'is_major', 'has_single_draft'];
 
 function rowToTournament(r: string[]): Tournament {
   return {
@@ -103,6 +103,7 @@ function rowToTournament(r: string[]): Tournament {
     picksPerPerson: parseInt(r[5], 10),
     cutsPerPerson: parseInt(r[6] ?? '0', 10) || 0,
     isMajor: r[7] === '1',
+    hasSingleDraft: r[8] === '1',
   };
 }
 
@@ -120,7 +121,7 @@ export async function createTournament(
   t: Omit<Tournament, 'id'>
 ): Promise<Tournament> {
   const id = crypto.randomUUID();
-  const row = [id, t.name, String(t.year), t.espnEventId, t.status, String(t.picksPerPerson), String(t.cutsPerPerson ?? 0), t.isMajor ? '1' : '0'];
+  const row = [id, t.name, String(t.year), t.espnEventId, t.status, String(t.picksPerPerson), String(t.cutsPerPerson ?? 0), t.isMajor ? '1' : '0', t.hasSingleDraft ? '1' : '0'];
   await appendRow('Tournaments', row);
   return { id, ...t };
 }
@@ -153,7 +154,7 @@ export async function updateTournamentStatus(
   status: Tournament['status']
 ): Promise<void> {
   const rows = await getRows('Tournaments');
-  const updated = rows.map((r) => (r[0] === id ? [...r.slice(0, 4), status, r[5]] : r));
+  const updated = rows.map((r) => (r[0] === id ? [r[0], r[1], r[2], r[3], status, ...r.slice(5)] : r));
   await clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, updated);
 }
 

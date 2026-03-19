@@ -56,7 +56,7 @@ export async function POST(
   }
 
   // 3. Validate turn order
-  const draftOrder = computeDraftOrder(participants, tournament.picksPerPerson);
+  const draftOrder = computeDraftOrder(participants, tournament.picksPerPerson, tournament.hasSingleDraft);
   const turnCheck = validatePickTurn(draftOrder, picks, participantName);
   if (!turnCheck.valid) {
     return NextResponse.json({ error: turnCheck.error }, { status: 409 });
@@ -84,7 +84,7 @@ export async function POST(
 
   // 7. If draft is now complete, move tournament to active
   const updatedPicks = [...picks, pick];
-  if (isDraftComplete(participants, updatedPicks, tournament.picksPerPerson)) {
+  if (isDraftComplete(participants, updatedPicks, tournament.picksPerPerson, tournament.hasSingleDraft)) {
     await updateTournamentStatus(params.id, 'active');
   }
 

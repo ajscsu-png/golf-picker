@@ -1,20 +1,42 @@
 import type { Participant, Pick, DraftSlot } from '@/types';
 
 /**
- * Generate the full ordered snake-draft slot list.
- * Odd rounds (1, 3, 5...): picks 1 → N
- * Even rounds (2, 4, 6...): picks N → 1
+ * Generate the full ordered draft slot list.
+ *
+ * Round 0 — single golfer draft: each person picks one golfer in draftPosition
+ * order (1 → N). The last picker in round 0 earns the first pick in the snake.
+ *
+ * Rounds 1+ — snake draft with reversed starting order so the round-0 last
+ * picker goes first:
+ *   Odd rounds (1, 3, 5...): N → 1
+ *   Even rounds (2, 4, 6...): 1 → N
  */
 export function computeDraftOrder(
   participants: Participant[],
-  picksPerPerson: number
+  picksPerPerson: number,
+  hasSingleDraft = false
 ): DraftSlot[] {
   const sorted = [...participants].sort((a, b) => a.draftPosition - b.draftPosition);
   const slots: DraftSlot[] = [];
   let overall = 1;
 
+  if (hasSingleDraft) {
+    // Round 0: single golfer draft in draftPosition order (1 → N)
+    sorted.forEach((p, idx) => {
+      slots.push({
+        overallPickNumber: overall++,
+        roundNumber: 0,
+        pickInRound: idx + 1,
+        participantName: p.name,
+      });
+    });
+  }
+
+  // Snake draft: if hasSingleDraft, reversed so the last round-0 picker goes first
+  const snakeSorted = hasSingleDraft ? [...sorted].reverse() : sorted;
+
   for (let round = 1; round <= picksPerPerson; round++) {
-    const roundParticipants = round % 2 === 1 ? sorted : [...sorted].reverse();
+    const roundParticipants = round % 2 === 1 ? snakeSorted : [...snakeSorted].reverse();
     roundParticipants.forEach((p, idx) => {
       slots.push({
         overallPickNumber: overall++,
@@ -39,9 +61,11 @@ export function getOnTheClock(
 export function isDraftComplete(
   participants: Participant[],
   picks: Pick[],
-  picksPerPerson: number
+  picksPerPerson: number,
+  hasSingleDraft = false
 ): boolean {
-  return picks.length >= participants.length * picksPerPerson;
+  const totalRounds = picksPerPerson + (hasSingleDraft ? 1 : 0);
+  return picks.length >= participants.length * totalRounds;
 }
 
 /** Server-side validation that the submitting participant is actually on the clock. */

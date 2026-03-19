@@ -16,7 +16,7 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
   const [myName, setMyName] = useState<string | null>(null);
   const [nameSelected, setNameSelected] = useState(false);
 
-  const draftOrder = computeDraftOrder(participants, tournament.picksPerPerson);
+  const draftOrder = computeDraftOrder(participants, tournament.picksPerPerson, tournament.hasSingleDraft);
   const onTheClock: DraftSlot | null = getOnTheClock(draftOrder, picks);
   const pickedIds = new Set(picks.map((p) => p.golferEspnId));
 
@@ -106,7 +106,7 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
           <p className="text-sm font-medium text-gray-600">On the clock</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{onTheClock?.participantName}</p>
           <p className="text-sm text-gray-500 mt-1">
-            Round {onTheClock?.roundNumber}, Pick {onTheClock?.overallPickNumber}
+            {onTheClock?.roundNumber === 0 ? 'Single Pick' : `Round ${onTheClock?.roundNumber}`}, Pick {onTheClock?.overallPickNumber}
           </p>
         </div>
       )}
@@ -144,16 +144,19 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: tournament.picksPerPerson }, (_, roundIdx) => {
-                const round = roundIdx + 1;
+              {[...(tournament.hasSingleDraft ? [0] : []), ...Array.from({ length: tournament.picksPerPerson }, (_, i) => i + 1)].map((round) => {
                 const roundSlots = draftOrder.filter((s) => s.roundNumber === round);
-                // For even rounds, columns are reversed — map back to participant order
                 const slotByParticipant = new Map(
                   roundSlots.map((s) => [s.participantName, s])
                 );
                 return (
-                  <tr key={round} className="border-b border-gray-100 last:border-0">
-                    <td className="py-2 px-3 text-gray-400 font-medium text-xs text-center">{round}</td>
+                  <tr
+                    key={round}
+                    className={`border-b border-gray-100 last:border-0 ${round === 0 ? 'bg-amber-50' : ''}`}
+                  >
+                    <td className="py-2 px-3 text-gray-400 font-medium text-xs text-center">
+                      {round === 0 ? <span className="text-amber-600 font-semibold">★</span> : round}
+                    </td>
                     {participants.map((p) => {
                       const slot = slotByParticipant.get(p.name);
                       if (!slot) return <td key={p.name} />;
@@ -190,17 +193,16 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
 
         {/* Mobile card view — shown only on small screens */}
         <div className="sm:hidden space-y-3">
-          {Array.from({ length: tournament.picksPerPerson }, (_, roundIdx) => {
-            const round = roundIdx + 1;
+          {[...(tournament.hasSingleDraft ? [0] : []), ...Array.from({ length: tournament.picksPerPerson }, (_, i) => i + 1)].map((round) => {
             const roundSlots = draftOrder.filter((s) => s.roundNumber === round);
             const slotByParticipant = new Map(
               roundSlots.map((s) => [s.participantName, s])
             );
             return (
               <div key={round} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                <div className="bg-gray-50 border-b border-gray-200 px-4 py-2">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Round {round}
+                <div className={`border-b border-gray-200 px-4 py-2 ${round === 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${round === 0 ? 'text-amber-700' : 'text-gray-500'}`}>
+                    {round === 0 ? '★ Single Pick' : `Round ${round}`}
                   </span>
                 </div>
                 <ul className="divide-y divide-gray-100">
