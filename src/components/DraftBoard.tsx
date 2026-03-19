@@ -64,31 +64,31 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
     <div className="space-y-6">
       {/* Name selector */}
       {!nameSelected ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
-          <h3 className="text-lg font-bold text-blue-800 mb-3">Who are you?</h3>
+        <div className="bg-green-900/60 border border-green-700 rounded-xl p-5">
+          <h3 className="text-lg font-bold text-green-100 mb-3">Who are you?</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {participants.map((p) => (
               <button
                 key={p.name}
                 onClick={() => selectName(p.name)}
-                className="bg-white border border-blue-300 rounded-lg py-2 px-3 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                className="bg-green-800/60 border border-green-600 rounded-lg py-2 px-3 text-sm font-medium text-green-200 hover:bg-green-700/60 hover:text-white transition-colors"
               >
                 {p.name}
               </button>
             ))}
           </div>
-          <p className="text-xs text-blue-600 mt-3">
-            You can also just watch — <button className="underline" onClick={() => setNameSelected(true)}>skip</button>
+          <p className="text-xs text-green-500 mt-3">
+            You can also just watch — <button className="underline text-green-400 hover:text-green-200" onClick={() => setNameSelected(true)}>skip</button>
           </p>
         </div>
       ) : (
-        <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-          <span className="text-sm text-gray-600">
-            Viewing as: <strong>{myName ?? 'Spectator'}</strong>
+        <div className="flex items-center justify-between bg-green-900/40 rounded-xl px-4 py-3 border border-green-800/60">
+          <span className="text-sm text-green-400">
+            Viewing as: <strong className="text-green-200">{myName ?? 'Spectator'}</strong>
           </span>
           <button
             onClick={() => { setMyName(null); setNameSelected(false); }}
-            className="text-xs text-blue-500 hover:underline"
+            className="text-xs text-green-400 hover:text-green-200 transition-colors"
           >
             Change
           </button>
@@ -97,15 +97,15 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
 
       {/* Status banner */}
       {isDraftDone ? (
-        <div className="bg-green-100 border border-green-300 rounded-xl p-4 text-center">
-          <p className="font-bold text-green-800 text-lg">Draft Complete! 🏌️</p>
-          <p className="text-sm text-green-700 mt-1">All picks are in. Check the leaderboard for scores.</p>
+        <div className="bg-green-500/20 border border-green-500/40 rounded-xl p-4 text-center">
+          <p className="font-bold text-green-100 text-lg">Draft Complete! 🏌️</p>
+          <p className="text-sm text-green-400 mt-1">All picks are in. Check the leaderboard for scores.</p>
         </div>
       ) : (
-        <div className={`rounded-xl p-4 border ${isMyTurn ? 'bg-yellow-50 border-yellow-300' : 'bg-gray-50 border-gray-200'}`}>
-          <p className="text-sm font-medium text-gray-600">On the clock</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{onTheClock?.participantName}</p>
-          <p className="text-sm text-gray-500 mt-1">
+        <div className={`rounded-xl p-4 border ${isMyTurn ? 'bg-yellow-500/20 border-yellow-400/40' : 'bg-green-900/40 border-green-800/60'}`}>
+          <p className="text-sm font-medium text-green-400">On the clock</p>
+          <p className={`text-2xl font-bold mt-1 ${isMyTurn ? 'text-yellow-100' : 'text-white'}`}>{onTheClock?.participantName}</p>
+          <p className="text-sm text-green-500 mt-1">
             {onTheClock?.roundNumber === 0 ? 'Single Pick' : `Round ${onTheClock?.roundNumber}`}, Pick {onTheClock?.overallPickNumber}
           </p>
         </div>
@@ -123,20 +123,20 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
         />
       )}
 
-      {/* Snake draft grid */}
+      {/* Draft board grid */}
       <div>
-        <h3 className="text-base font-semibold text-gray-700 mb-3">Draft Board</h3>
+        <h3 className="text-base font-semibold text-green-300 mb-3">Draft Board</h3>
 
         {/* Desktop table — hidden on small screens */}
-        <div className="hidden sm:block overflow-x-auto rounded-xl border border-gray-200">
+        <div className="hidden sm:block overflow-x-auto rounded-xl border border-green-800/60">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 w-12">RD</th>
+              <tr className="bg-green-950/60 border-b border-green-800/60">
+                <th className="py-2 px-3 text-left text-xs font-semibold text-green-500 w-12">RD</th>
                 {participants.map((p) => (
                   <th
                     key={p.name}
-                    className={`py-2 px-3 text-center text-xs font-semibold ${p.name === myName ? 'text-blue-700' : 'text-gray-500'}`}
+                    className={`py-2 px-3 text-center text-xs font-semibold ${p.name === myName ? 'text-green-300' : 'text-green-500'}`}
                   >
                     {p.name}
                   </th>
@@ -152,10 +152,12 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                 return (
                   <tr
                     key={round}
-                    className={`border-b border-gray-100 last:border-0 ${round === 0 ? 'bg-amber-50' : ''}`}
+                    className={`border-b border-green-900/60 last:border-0 ${round === 0 ? 'bg-amber-500/10' : ''}`}
                   >
-                    <td className="py-2 px-3 text-gray-400 font-medium text-xs text-center">
-                      {round === 0 ? <span className="text-amber-600 font-semibold">★</span> : round}
+                    <td className="py-2 px-3 font-medium text-xs text-center">
+                      {round === 0
+                        ? <span className="text-amber-400 font-semibold">★</span>
+                        : <span className="text-green-600">{round}</span>}
                     </td>
                     {participants.map((p) => {
                       const slot = slotByParticipant.get(p.name);
@@ -168,10 +170,10 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                           key={p.name}
                           className={`py-2 px-3 text-center ${
                             isCurrentSlot
-                              ? 'bg-green-100 font-semibold text-green-800'
+                              ? 'bg-green-500/20 font-semibold text-green-300'
                               : pick
-                              ? 'text-gray-800'
-                              : 'text-gray-300'
+                              ? 'text-green-100'
+                              : 'text-green-800'
                           }`}
                         >
                           {pick ? (
@@ -199,13 +201,13 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
               roundSlots.map((s) => [s.participantName, s])
             );
             return (
-              <div key={round} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                <div className={`border-b border-gray-200 px-4 py-2 ${round === 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
-                  <span className={`text-xs font-semibold uppercase tracking-wide ${round === 0 ? 'text-amber-700' : 'text-gray-500'}`}>
+              <div key={round} className="rounded-xl border border-green-800/60 bg-green-900/40 overflow-hidden">
+                <div className={`border-b border-green-800/60 px-4 py-2 ${round === 0 ? 'bg-amber-500/10' : 'bg-green-950/60'}`}>
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${round === 0 ? 'text-amber-400' : 'text-green-500'}`}>
                     {round === 0 ? '★ Single Pick' : `Round ${round}`}
                   </span>
                 </div>
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-green-900/60">
                   {participants.map((p) => {
                     const slot = slotByParticipant.get(p.name);
                     if (!slot) return null;
@@ -216,12 +218,12 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                       <li
                         key={p.name}
                         className={`flex items-center justify-between px-4 py-2.5 ${
-                          isCurrentSlot ? 'bg-green-50' : ''
+                          isCurrentSlot ? 'bg-green-500/10' : ''
                         }`}
                       >
                         <span
                           className={`text-sm font-medium ${
-                            p.name === myName ? 'text-blue-700' : 'text-gray-700'
+                            p.name === myName ? 'text-green-300' : 'text-green-200'
                           }`}
                         >
                           {p.name}
@@ -229,10 +231,10 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                         <span
                           className={`text-sm ${
                             isCurrentSlot
-                              ? 'text-green-700 font-semibold animate-pulse'
+                              ? 'text-green-300 font-semibold animate-pulse'
                               : pick
-                              ? 'text-gray-800'
-                              : 'text-gray-300'
+                              ? 'text-green-100'
+                              : 'text-green-700'
                           }`}
                         >
                           {pick
