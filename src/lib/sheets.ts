@@ -220,7 +220,7 @@ export async function getParticipants(tournamentId: string): Promise<Participant
 
 export async function setParticipants(
   tournamentId: string,
-  participants: Array<{ name: string; draftPosition: number }>
+  participants: Array<{ name: string; draftPosition: number; phone?: string }>
 ): Promise<void> {
   const allRows = await getRows('Participants');
   const otherRows = allRows.filter((r) => r[0] !== tournamentId);
