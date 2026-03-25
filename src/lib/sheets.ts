@@ -199,13 +199,14 @@ export async function deleteTournament(id: string): Promise<void> {
 
 // ─── Participants ─────────────────────────────────────────────────────────────
 
-const PARTICIPANT_HEADER = ['tournament_id', 'name', 'draft_position'];
+const PARTICIPANT_HEADER = ['tournament_id', 'name', 'draft_position', 'phone'];
 
 function rowToParticipant(r: string[]): Participant {
   return {
     tournamentId: r[0],
     name: r[1],
     draftPosition: parseInt(r[2], 10),
+    phone: r[3] ?? undefined,
   };
 }
 
@@ -227,6 +228,7 @@ export async function setParticipants(
     tournamentId,
     p.name,
     String(p.draftPosition),
+    p.phone ?? '',
   ]);
   await clearAndWriteRows('Participants', PARTICIPANT_HEADER, [...otherRows, ...newRows]);
 }

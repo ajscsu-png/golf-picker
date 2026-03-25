@@ -24,6 +24,7 @@ export interface Participant {
   tournamentId: string;
   name: string;
   draftPosition: number; // 1-based
+  phone?: string; // E.164 format, e.g. +15551234567
 }
 
 export interface Pick {
