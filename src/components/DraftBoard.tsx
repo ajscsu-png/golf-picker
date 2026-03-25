@@ -133,12 +133,9 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="py-2 px-3 text-left text-xs font-semibold text-gray-500 w-12">RD</th>
-                {participants.map((p) => (
-                  <th
-                    key={p.name}
-                    className={`py-2 px-3 text-center text-xs font-semibold ${p.name === myName ? 'text-green-700' : 'text-gray-500'}`}
-                  >
-                    {p.name}
+                {participants.map((_, i) => (
+                  <th key={i} className="py-2 px-3 text-center text-xs font-semibold text-gray-400">
+                    {i + 1}
                   </th>
                 ))}
               </tr>
@@ -146,9 +143,6 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
             <tbody>
               {[...(tournament.hasSingleDraft ? [0] : []), ...Array.from({ length: tournament.picksPerPerson }, (_, i) => i + 1)].map((round) => {
                 const roundSlots = draftOrder.filter((s) => s.roundNumber === round);
-                const slotByParticipant = new Map(
-                  roundSlots.map((s) => [s.participantName, s])
-                );
                 return (
                   <tr
                     key={round}
@@ -159,15 +153,12 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                         ? <span className="text-amber-600 font-semibold">★</span>
                         : <span className="text-gray-400">{round}</span>}
                     </td>
-                    {participants.map((p) => {
-                      const slot = slotByParticipant.get(p.name);
-                      if (!slot) return <td key={p.name} />;
+                    {roundSlots.map((slot) => {
                       const pick = getPickForSlot(slot);
-                      const isCurrentSlot =
-                        onTheClock?.overallPickNumber === slot.overallPickNumber;
+                      const isCurrentSlot = onTheClock?.overallPickNumber === slot.overallPickNumber;
                       return (
                         <td
-                          key={p.name}
+                          key={slot.participantName}
                           className={`py-2 px-3 text-center ${
                             isCurrentSlot
                               ? 'bg-green-100 font-semibold text-green-800'
@@ -176,6 +167,9 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                               : 'text-gray-300'
                           }`}
                         >
+                          <div className={`text-xs font-semibold mb-0.5 ${slot.participantName === myName ? 'text-green-700' : 'text-gray-500'}`}>
+                            {slot.participantName}
+                          </div>
                           {pick ? (
                             <span className="text-xs leading-tight">{pick.golferName}</span>
                           ) : isCurrentSlot ? (
@@ -197,9 +191,6 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
         <div className="sm:hidden space-y-3">
           {[...(tournament.hasSingleDraft ? [0] : []), ...Array.from({ length: tournament.picksPerPerson }, (_, i) => i + 1)].map((round) => {
             const roundSlots = draftOrder.filter((s) => s.roundNumber === round);
-            const slotByParticipant = new Map(
-              roundSlots.map((s) => [s.participantName, s])
-            );
             return (
               <div key={round} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <div className={`border-b border-gray-200 px-4 py-2 ${round === 0 ? 'bg-amber-50' : 'bg-gray-50'}`}>
@@ -208,25 +199,22 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
                   </span>
                 </div>
                 <ul className="divide-y divide-gray-100">
-                  {participants.map((p) => {
-                    const slot = slotByParticipant.get(p.name);
-                    if (!slot) return null;
+                  {roundSlots.map((slot) => {
                     const pick = getPickForSlot(slot);
-                    const isCurrentSlot =
-                      onTheClock?.overallPickNumber === slot.overallPickNumber;
+                    const isCurrentSlot = onTheClock?.overallPickNumber === slot.overallPickNumber;
                     return (
                       <li
-                        key={p.name}
+                        key={slot.participantName}
                         className={`flex items-center justify-between px-4 py-2.5 ${
                           isCurrentSlot ? 'bg-green-50' : ''
                         }`}
                       >
                         <span
                           className={`text-sm font-medium ${
-                            p.name === myName ? 'text-green-700' : 'text-gray-700'
+                            slot.participantName === myName ? 'text-green-700' : 'text-gray-700'
                           }`}
                         >
-                          {p.name}
+                          {slot.participantName}
                         </span>
                         <span
                           className={`text-sm ${
