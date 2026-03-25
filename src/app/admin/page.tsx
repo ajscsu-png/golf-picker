@@ -26,6 +26,20 @@ export default function AdminPage() {
   const [tSubmitting, setTSubmitting] = useState(false);
   const [tMessage, setTMessage] = useState('');
 
+  // Edit tournament form
+  const [editTournamentId, setEditTournamentId] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editYear, setEditYear] = useState('');
+  const [editEspnId, setEditEspnId] = useState('');
+  const [editEspnName, setEditEspnName] = useState('');
+  const [editPicks, setEditPicks] = useState('');
+  const [editCuts, setEditCuts] = useState('0');
+  const [editIsMajor, setEditIsMajor] = useState(false);
+  const [editHasSingleDraft, setEditHasSingleDraft] = useState(false);
+  const [editStatus, setEditStatus] = useState<'draft' | 'active' | 'completed'>('draft');
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editMessage, setEditMessage] = useState('');
+
   // Participants form
   const [selectedTournament, setSelectedTournament] = useState('');
   const [participants, setParticipants] = useState<ParticipantEntry[]>(
@@ -110,6 +124,73 @@ export default function AdminPage() {
       setTMessage('Network error.');
     } finally {
       setTSubmitting(false);
+    }
+  }
+
+  function loadEditTournament(id: string) {
+    setEditTournamentId(id);
+    setEditMessage('');
+    if (!id) return;
+    const t = tournaments.find((x) => x.id === id);
+    if (!t) return;
+    setEditName(t.name);
+    setEditYear(String(t.year));
+    setEditEspnId(t.espnEventId);
+    setEditEspnName('');
+    setEditPicks(String(t.picksPerPerson));
+    setEditCuts(String(t.cutsPerPerson));
+    setEditIsMajor(t.isMajor);
+    setEditHasSingleDraft(t.hasSingleDraft);
+    setEditStatus(t.status);
+  }
+
+  async function saveEditTournament(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editTournamentId) return;
+    setEditSubmitting(true);
+    setEditMessage('');
+    try {
+      const res = await fetch(`/api/tournaments/${editTournamentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName,
+          year: parseInt(editYear, 10),
+          espnEventId: editEspnId,
+          picksPerPerson: parseInt(editPicks, 10),
+          cutsPerPerson: parseInt(editCuts, 10),
+          isMajor: editIsMajor,
+          hasSingleDraft: editHasSingleDraft,
+          status: editStatus,
+        }),
+      });
+      if (res.ok) {
+        setEditMessage('✅ Tournament updated!');
+        setTournaments((prev) =>
+          prev.map((t) =>
+            t.id === editTournamentId
+              ? {
+                  ...t,
+                  name: editName,
+                  year: parseInt(editYear, 10),
+                  espnEventId: editEspnId,
+                  picksPerPerson: parseInt(editPicks, 10),
+                  cutsPerPerson: parseInt(editCuts, 10),
+                  isMajor: editIsMajor,
+                  hasSingleDraft: editHasSingleDraft,
+                  status: editStatus,
+                }
+              : t
+          )
+        );
+      } else {
+        const data = await res.json();
+        setEditMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setEditMessage('Network error.');
+    } finally {
+      setEditSubmitting(false);
     }
   }
 
@@ -415,6 +496,162 @@ export default function AdminPage() {
           >
             {tSubmitting ? 'Creating...' : 'Create Tournament'}
           </button>
+        </form>
+      </section>
+
+      {/* Section: Edit Tournament */}
+      <section className="bg-white rounded-xl border border-blue-200 p-6 space-y-5">
+        <h2 className="text-lg font-semibold text-blue-800">Edit Tournament</h2>
+        <form onSubmit={saveEditTournament} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tournament</label>
+            <select
+              value={editTournamentId}
+              onChange={(e) => loadEditTournament(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">— select —</option>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} {t.year} [{t.status}]</option>
+              ))}
+            </select>
+          </div>
+
+          {editTournamentId && (
+            <>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <input
+                    type="number"
+                    value={editYear}
+                    onChange={(e) => setEditYear(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ESPN Event ID</label>
+                <input
+                  type="text"
+                  value={editEspnId}
+                  onChange={(e) => setEditEspnId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <div className="flex items-center justify-between mt-1">
+                  {editEspnName && <p className="text-xs text-blue-700">Selected: <strong>{editEspnName}</strong></p>}
+                  <button
+                    type="button"
+                    onClick={loadEspnEvents}
+                    disabled={loadingEvents}
+                    className="text-xs text-blue-600 hover:underline ml-auto"
+                  >
+                    {loadingEvents ? 'Loading...' : 'Browse ESPN Events'}
+                  </button>
+                </div>
+                {espnEvents.length > 0 && (
+                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 mt-1">
+                    {espnEvents.map((ev) => (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        onClick={() => { setEditEspnId(ev.id); setEditEspnName(ev.name); }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors ${editEspnId === ev.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                      >
+                        <span>{ev.name}</span>
+                        {ev.date && <span className="text-gray-400 ml-2 text-xs">{new Date(ev.date).toLocaleDateString()}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Picks Per Person</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={editPicks}
+                    onChange={(e) => setEditPicks(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cuts Per Person</label>
+                  <select
+                    value={editCuts}
+                    onChange={(e) => setEditCuts(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="0">None</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as 'draft' | 'active' | 'completed')}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="draft">draft</option>
+                    <option value="active">active</option>
+                    <option value="completed">completed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-6">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editIsMajor"
+                    checked={editIsMajor}
+                    onChange={(e) => setEditIsMajor(e.target.checked)}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                  <label htmlFor="editIsMajor" className="text-sm font-medium text-gray-700">Major Tournament</label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="editHasSingleDraft"
+                    checked={editHasSingleDraft}
+                    onChange={(e) => setEditHasSingleDraft(e.target.checked)}
+                    className="w-4 h-4 accent-blue-600"
+                  />
+                  <label htmlFor="editHasSingleDraft" className="text-sm font-medium text-gray-700">Single Golfer Draft</label>
+                </div>
+              </div>
+
+              {editMessage && (
+                <p className={`text-sm ${editMessage.startsWith('✅') ? 'text-green-700' : 'text-red-600'}`}>
+                  {editMessage}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={editSubmitting}
+                className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
+              >
+                {editSubmitting ? 'Saving...' : 'Save Changes'}
+              </button>
+            </>
+          )}
         </form>
       </section>
 

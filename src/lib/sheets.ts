@@ -158,6 +158,28 @@ export async function updateTournamentStatus(
   await clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, updated);
 }
 
+export async function updateTournament(
+  id: string,
+  fields: Partial<Omit<Tournament, 'id'>>
+): Promise<void> {
+  const rows = await getRows('Tournaments');
+  const updated = rows.map((r) => {
+    if (r[0] !== id) return r;
+    return [
+      r[0],
+      fields.name ?? r[1],
+      fields.year !== undefined ? String(fields.year) : r[2],
+      fields.espnEventId ?? r[3],
+      fields.status ?? r[4],
+      fields.picksPerPerson !== undefined ? String(fields.picksPerPerson) : r[5],
+      fields.cutsPerPerson !== undefined ? String(fields.cutsPerPerson) : r[6],
+      fields.isMajor !== undefined ? (fields.isMajor ? '1' : '0') : r[7],
+      fields.hasSingleDraft !== undefined ? (fields.hasSingleDraft ? '1' : '0') : r[8],
+    ];
+  });
+  await clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, updated);
+}
+
 export async function deleteTournament(id: string): Promise<void> {
   const [tRows, pRows, pickRows, scoreRows, cutRows] = await Promise.all([
     getRows('Tournaments'),

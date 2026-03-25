@@ -53,6 +53,16 @@ const JOKES = [
   "My wife gave me an ultimatum — her or golf. I sure do miss her.",
   "Golf is like a bad habit — expensive, time-consuming, and everyone judges you for it.",
   "Why is golf the perfect sport? Four hours of outdoor drinking with occasional exercise.",
+  "Connor's pre-shot routine is longer than most marriages.",
+  "Kyle says he plays to a 12 handicap. His playing partners say that's generous by about 12 strokes.",
+  "Connor hit a shot so far right it landed on a different hole. He called it a strategic layup.",
+  "Kyle reads every putt like it's the final chapter of a novel. Spoiler: it still lips out.",
+  "Connor's bag has more headcovers than he has pars.",
+  "Kyle's swing coach quit. Said he needed a therapist more than an instructor.",
+  "Connor lost three balls on the front nine and blamed the wind. There was no wind.",
+  "Kyle marks his ball, lines up, re-marks, re-lines, takes two practice swings, and three-putts anyway.",
+  "Connor says he's 'working on his game.' His game has been under construction since 2019.",
+  "Kyle's scorecard and his dating life have the same thing in common — lots of bogeys and questionable decisions.",
 ];
 
 export default function GolfJoke() {
