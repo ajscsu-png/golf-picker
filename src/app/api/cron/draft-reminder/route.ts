@@ -77,7 +77,8 @@ async function runReminder() {
     const roundLabel = onTheClock.roundNumber === 0 ? 'Single Pick' : `Round ${onTheClock.roundNumber}`;
     const message = `⛳ Hey ${onTheClock.participantName}, you're on the clock for the ${tournament.name} draft! ${roundLabel}, Pick ${onTheClock.overallPickNumber}. Make your pick: https://golf-picker.vercel.app/draft/${tournament.id}`;
 
-    await sendSms(participant.phone, message);
+    const phone = participant.phone.startsWith('+') ? participant.phone : `+${participant.phone}`;
+    await sendSms(phone, message);
     await setConfig(CONFIG_NOTIFIED_KEY, 'true');
 
     results.push({ tournamentId: tournament.id, message: `SMS sent to ${onTheClock.participantName}` });
