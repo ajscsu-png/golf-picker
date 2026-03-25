@@ -42,8 +42,9 @@ export default function AdminPage() {
 
   // Participants form
   const [selectedTournament, setSelectedTournament] = useState('');
+  const DEFAULT_PARTICIPANTS = ['Andy', 'Connor', 'Kyle', 'Tim', 'Brad', 'Bill', 'Wyatt', 'Andrew'];
   const [participants, setParticipants] = useState<ParticipantEntry[]>(
-    Array.from({ length: 8 }, (_, i) => ({ name: '', draftPosition: i + 1 }))
+    DEFAULT_PARTICIPANTS.map((name, i) => ({ name, draftPosition: i + 1 }))
   );
   const [pSubmitting, setPSubmitting] = useState(false);
   const [pMessage, setPMessage] = useState('');
@@ -448,7 +449,7 @@ export default function AdminPage() {
                 onChange={(e) => {
                   const n = Math.max(2, Math.min(20, parseInt(e.target.value) || 2));
                   setTPlayerCount(String(n));
-                  setParticipants(Array.from({ length: n }, (_, i) => ({ name: '', draftPosition: i + 1 })));
+                  setParticipants(Array.from({ length: n }, (_, i) => ({ name: DEFAULT_PARTICIPANTS[i] ?? '', draftPosition: i + 1 })));
                 }}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />

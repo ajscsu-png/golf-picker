@@ -1,8 +1,9 @@
 # Golf Picker — Claude Context
 
 ## Hosting
-- Deployed on **Vercel**
-- Pushing to the main branch triggers a deploy
+- Deployed on **Vercel** at https://golf-picker.vercel.app
+- Pushing to `main` triggers a deploy automatically
+- Repo: https://github.com/ajscsu-png/golf-picker
 
 ## Data Storage
 - All tournament data lives in a **Google Sheet** named **"Golf Tournament Picker"**
@@ -26,4 +27,5 @@
 - Scoreboard endpoint always works but has a different response shape
 
 ## Players
-- Friends named **Connor** and **Kyle** are participants in the group
+- Fixed group of 8: **Andy, Connor, Kyle, Tim, Brad, Bill, Wyatt, Andrew**
+- These are pre-populated in the admin participants form
