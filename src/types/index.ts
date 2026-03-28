@@ -72,7 +72,7 @@ export interface EspnEvent {
 
 export interface ParticipantLeaderboardRow {
   participant: Participant;
-  golfers: Array<GolferScore & { picked: boolean; dropped: boolean }>;
+  golfers: Array<GolferScore & { picked: boolean; dropped: boolean; bubbleApplied: boolean }>;
   totalScore: number | null;
   rank: number;
 }

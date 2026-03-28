@@ -44,8 +44,9 @@ function gradeBadge(grade: string | null) {
   );
 }
 
-function statusBadge(status: string, dropped: boolean) {
+function statusBadge(status: string, dropped: boolean, bubbleApplied: boolean) {
   if (dropped) return <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">DROPPED</span>;
+  if (bubbleApplied) return <span className="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded" title="Missed cut — assigned bubble score">BUBBLE</span>;
   if (status === 'cut') return <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">CUT</span>;
   if (status === 'wd') return <span className="text-xs bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">WD</span>;
   if (status === 'dq') return <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded">DQ</span>;
@@ -110,7 +111,7 @@ export default function Leaderboard({ rows }: Props) {
                             <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
                               {g.golferName}
                             </span>
-                            {statusBadge(g.status, g.dropped)}
+                            {statusBadge(g.status, g.dropped, g.bubbleApplied)}
                             {g.totalScore !== null && gradeBadge(getGrade(g))}
                           </div>
                         </td>

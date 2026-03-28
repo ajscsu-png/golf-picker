@@ -25,7 +25,8 @@ function buildLeaderboard(
   participants: Awaited<ReturnType<typeof getParticipants>>,
   picks: Awaited<ReturnType<typeof getPicks>>,
   scores: GolferScore[],
-  cuts: Cut[]
+  cuts: Cut[],
+  cutsPerPerson: number
 ): ParticipantLeaderboardRow[] {
   const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
 
@@ -48,7 +49,12 @@ function buildLeaderboard(
       const missedCut = score && score.status !== 'active';
 
       // 3rd drop on a missed-cut golfer → apply bubble score penalty instead of excluding
-      let effectiveScore = score ? { ...score, picked: true, dropped } : {
+      // Bubble applies when: golfer missed the cut AND wasn't dropped AND cuts are enabled
+      // This covers both "too many missed cuts" and the explicit 3rd-drop mechanic
+      const isUndroppedMissedCut = cutsPerPerson > 0 && !dropped && !!missedCut;
+      const applyBubble = (isThirdDrop || isUndroppedMissedCut) && bubbleScore !== null;
+
+      let effectiveScore = score ? { ...score, picked: true, dropped, bubbleApplied: false } : {
         tournamentId: pick.tournamentId,
         golferEspnId: pick.golferEspnId,
         golferName: pick.golferName,
@@ -58,10 +64,11 @@ function buildLeaderboard(
         status: 'active' as const,
         picked: true,
         dropped,
+        bubbleApplied: false,
       };
 
-      if (isThirdDrop && missedCut && bubbleScore !== null) {
-        effectiveScore = { ...effectiveScore, totalScore: bubbleScore, dropped: false };
+      if (applyBubble) {
+        effectiveScore = { ...effectiveScore, totalScore: bubbleScore, dropped: false, bubbleApplied: true };
       }
 
       return effectiveScore;
@@ -108,7 +115,7 @@ export default async function LeaderboardPage({ params }: Props) {
 
   if (!tournament) notFound();
 
-  const rows = buildLeaderboard(participants, picks, scores, cuts);
+  const rows = buildLeaderboard(participants, picks, scores, cuts, tournament.cutsPerPerson);
   const facts = getTournamentFacts(tournament.name);
 
   return (
