@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getTournamentById, getParticipants, getPicks, getCuts } from '@/lib/sheets';
-import { getCurrentRound } from '@/lib/espn';
+import { getCurrentRound, getLeaderboard } from '@/lib/espn';
 import CutSelector from './CutSelector';
 
 export const revalidate = 0;
@@ -27,7 +27,10 @@ export default async function CutPage({ params }: Props) {
     );
   }
 
-  const round = await getCurrentRound(tournament.espnEventId);
+  const [round, scores] = await Promise.all([
+    getCurrentRound(tournament.espnEventId),
+    getLeaderboard(tournament.espnEventId),
+  ]);
   const locked = round >= 3;
 
   return (
@@ -66,6 +69,7 @@ export default async function CutPage({ params }: Props) {
           participants={participants}
           picks={picks}
           existingCuts={cuts}
+          scores={scores}
           locked={false}
         />
       )}

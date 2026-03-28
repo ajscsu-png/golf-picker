@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Participant, Pick, Cut } from '@/types';
+import type { Participant, Pick, Cut, GolferScore } from '@/types';
 
 interface Props {
   tournamentId: string;
@@ -9,7 +9,14 @@ interface Props {
   participants: Participant[];
   picks: Pick[];
   existingCuts: Cut[];
+  scores: GolferScore[];
   locked: boolean;
+}
+
+function formatScore(score: number | null): string {
+  if (score === null) return '--';
+  if (score === 0) return 'E';
+  return score > 0 ? `+${score}` : `${score}`;
 }
 
 export default function CutSelector({
@@ -18,7 +25,9 @@ export default function CutSelector({
   participants,
   picks,
   existingCuts,
+  scores,
 }: Props) {
+  const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
   const [selectedParticipant, setSelectedParticipant] = useState('');
   // Ordered array — position in array = drop number (index 0 = drop 1, etc.)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -32,7 +41,17 @@ export default function CutSelector({
       .filter((c) => c.participantName === name)
       .sort((a, b) => a.dropNumber - b.dropNumber)
       .map((c) => c.golferEspnId);
-    setSelectedIds(existing);
+    if (existing.length > 0) {
+      setSelectedIds(existing);
+    } else {
+      // Auto-select golfers who missed the cut, up to the limit
+      const myPicks = picks.filter((p) => p.participantName === name);
+      const missedCut = myPicks
+        .filter((p) => scoreMap.get(p.golferEspnId)?.status === 'cut')
+        .map((p) => p.golferEspnId)
+        .slice(0, cutsPerPerson);
+      setSelectedIds(missedCut);
+    }
   }
 
   function toggleGolfer(espnId: string) {
@@ -131,6 +150,8 @@ export default function CutSelector({
                 const isDisabled = !isSelected && selectedIds.length >= cutsPerPerson;
                 const dropNum = isSelected ? dropIndex + 1 : null;
                 const isThirdDrop = dropNum === 3;
+                const score = scoreMap.get(pick.golferEspnId);
+                const missedCut = score?.status === 'cut';
                 return (
                   <button
                     key={pick.golferEspnId}
@@ -147,12 +168,36 @@ export default function CutSelector({
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
                       }`}
                   >
-                    <span>{pick.golferName}</span>
-                    {isSelected && (
-                      <span className="text-xs font-semibold">
-                        {isThirdDrop ? 'DROP 3 (bubble)' : `DROP ${dropNum}`}
-                      </span>
-                    )}
+                    <span className="flex items-center gap-2">
+                      {pick.golferName}
+                      {missedCut && (
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-600 border border-red-200">
+                          MISSED CUT
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-3 shrink-0">
+                      {score && (
+                        <span className="text-xs text-gray-400">
+                          {score.r1 !== null || score.r2 !== null
+                            ? `R1: ${formatScore(score.r1)}  R2: ${formatScore(score.r2)}  `
+                            : ''}
+                          <span className={`font-semibold ${
+                            score.totalScore === null ? 'text-gray-400'
+                            : score.totalScore < 0 ? 'text-green-600'
+                            : score.totalScore > 0 ? 'text-red-500'
+                            : 'text-gray-600'
+                          }`}>
+                            {formatScore(score.totalScore)}
+                          </span>
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span className="text-xs font-semibold">
+                          {isThirdDrop ? 'DROP 3 (bubble)' : `DROP ${dropNum}`}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
