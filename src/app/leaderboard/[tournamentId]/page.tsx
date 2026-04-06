@@ -9,6 +9,7 @@ import {
 } from '@/lib/sheets';
 import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
+import LeaderboardToggle from '@/components/LeaderboardToggle';
 import RefreshScoresButton from '@/components/RefreshScoresButton';
 import TrashTalk from '@/components/TrashTalk';
 import TournamentFactsCard from '@/components/TournamentFacts';
@@ -26,7 +27,8 @@ function buildLeaderboard(
   picks: Awaited<ReturnType<typeof getPicks>>,
   scores: GolferScore[],
   cuts: Cut[],
-  cutsPerPerson: number
+  cutsPerPerson: number,
+  roundNumbers?: number[]
 ): ParticipantLeaderboardRow[] {
   const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
 
@@ -37,7 +39,9 @@ function buildLeaderboard(
     : null;
 
   const rows = participants.map((participant) => {
-    const myPicks = picks.filter((p) => p.participantName === participant.name);
+    const myPicks = picks
+      .filter((p) => p.participantName === participant.name)
+      .filter((p) => roundNumbers === undefined || roundNumbers.includes(p.roundNumber));
     const myCuts = cuts.filter((c) => c.participantName === participant.name);
     const myCutMap = new Map(myCuts.map((c) => [c.golferEspnId, c]));
 
@@ -116,6 +120,12 @@ export default async function LeaderboardPage({ params }: Props) {
   if (!tournament) notFound();
 
   const rows = buildLeaderboard(participants, picks, scores, cuts, tournament.cutsPerPerson);
+  const singleRows = tournament.hasSingleDraft
+    ? buildLeaderboard(participants, picks, scores, cuts, tournament.cutsPerPerson, [0])
+    : [];
+  const snakeRows = tournament.hasSingleDraft
+    ? buildLeaderboard(participants, picks, scores, cuts, tournament.cutsPerPerson, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    : [];
   const facts = getTournamentFacts(tournament.name);
 
   return (
@@ -142,7 +152,7 @@ export default async function LeaderboardPage({ params }: Props) {
 
       {facts && <TournamentFactsCard facts={facts} />}
 
-      {rows.length === 0 ? (
+      {participants.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <p>No participants yet.</p>
         </div>
@@ -151,8 +161,14 @@ export default async function LeaderboardPage({ params }: Props) {
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-sm">
             No scores yet — scores update automatically every 15 minutes once the tournament begins.
           </div>
-          <Leaderboard rows={rows} />
+          {tournament.hasSingleDraft ? (
+            <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} />
+          ) : (
+            <Leaderboard rows={rows} />
+          )}
         </div>
+      ) : tournament.hasSingleDraft ? (
+        <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} />
       ) : (
         <Leaderboard rows={rows} />
       )}

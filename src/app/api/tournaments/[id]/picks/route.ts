@@ -12,6 +12,7 @@ import {
   validatePickTurn,
   isDraftComplete,
 } from '@/lib/draft';
+import { sendSms } from '@/lib/twilio';
 
 export async function GET(
   _req: NextRequest,
@@ -84,8 +85,23 @@ export async function POST(
 
   // 7. If draft is now complete, move tournament to active
   const updatedPicks = [...picks, pick];
-  if (isDraftComplete(participants, updatedPicks, tournament.picksPerPerson, tournament.hasSingleDraft)) {
+  const draftComplete = isDraftComplete(participants, updatedPicks, tournament.picksPerPerson, tournament.hasSingleDraft);
+  if (draftComplete) {
     await updateTournamentStatus(params.id, 'active');
+  }
+
+  // 8. Notify the next person on the clock (fire and forget)
+  if (!draftComplete) {
+    const nextSlot = draftOrder[updatedPicks.length];
+    if (nextSlot) {
+      const nextParticipant = participants.find((p) => p.name === nextSlot.participantName);
+      if (nextParticipant?.phone) {
+        const msg = `🏌️ ${participantName} just picked ${golferName}. You're on the clock, ${nextSlot.participantName}! Make your pick: https://golf-picker.vercel.app`;
+        sendSms(nextParticipant.phone, msg).catch((err) =>
+          console.error('SMS failed:', err)
+        );
+      }
+    }
   }
 
   return NextResponse.json(pick, { status: 201 });

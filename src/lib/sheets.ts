@@ -89,6 +89,22 @@ export async function setConfig(key: string, value: string): Promise<void> {
   await clearAndWriteRows('Config', ['key', 'value'], updated);
 }
 
+// ─── Players (persistent phone directory) ────────────────────────────────────
+
+export async function getPlayerPhones(): Promise<Map<string, string>> {
+  const rows = await getRows('Players');
+  const map = new Map<string, string>();
+  for (const r of rows) {
+    if (r[0] && r[1]) map.set(r[0], r[1]);
+  }
+  return map;
+}
+
+export async function setPlayerPhones(players: Array<{ name: string; phone: string }>): Promise<void> {
+  const rows = players.map((p) => [p.name, p.phone]);
+  await clearAndWriteRows('Players', ['name', 'phone'], rows);
+}
+
 // ─── Tournaments ─────────────────────────────────────────────────────────────
 
 const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person', 'is_major', 'has_single_draft'];
