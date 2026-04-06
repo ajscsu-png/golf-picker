@@ -14,7 +14,11 @@ interface Props {
 }
 
 function normalizeName(s: string): string {
-  return s.toLowerCase().replace(/[^a-z ]/g, '').trim();
+  return s
+    .normalize('NFD')                    // decompose accented chars (Å → A + combining ring)
+    .replace(/[\u0300-\u036f]/g, '')     // strip combining diacritics
+    .toLowerCase()
+    .replace(/[^a-z]/g, '');            // strip everything except letters (spaces, dots, hyphens)
 }
 
 export default function GolferPicker({
