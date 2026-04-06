@@ -77,11 +77,25 @@ export async function getEvents(): Promise<EspnEvent[]> {
 }
 
 export async function getField(eventId: string): Promise<EspnGolfer[]> {
-  // Try summary endpoint first (works once tournament is live)
+  // Helper to extract golfers from a scoreboard event object
+  function golfersFromScoreboardEvent(event: Record<string, unknown>): EspnGolfer[] {
+    const competitors = ((event.competitions as Array<Record<string, unknown>>)?.[0]?.competitors ?? []) as Array<Record<string, unknown>>;
+    return competitors
+      .map((c) => {
+        const athlete = c.athlete as Record<string, unknown> | undefined;
+        return {
+          id: String(c.id ?? ''),
+          name: String(athlete?.displayName ?? athlete?.fullName ?? ''),
+          worldRanking: undefined,
+        };
+      })
+      .filter((g) => g.id && g.name);
+  }
+
+  // 1. Try summary endpoint (works once tournament is live)
   const summaryRes = await fetch(`${SUMMARY_BASE}?event=${eventId}`, {
     next: { revalidate: 3600 },
   });
-
   if (summaryRes.ok) {
     const data = await summaryRes.json() as Record<string, unknown>;
     const competitors = extractCompetitors(data);
@@ -98,26 +112,44 @@ export async function getField(eventId: string): Promise<EspnGolfer[]> {
     }
   }
 
-  // Fallback: scoreboard endpoint works for pre-tournament field
+  // 2. Try scoreboard with event ID — only use if the event actually matches
   const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${eventId}`, {
     next: { revalidate: 3600 },
   });
-  if (!scoreboardRes.ok) return [];
-  const sbData = await scoreboardRes.json() as Record<string, unknown>;
-  const events = (sbData.events as Array<Record<string, unknown>>) ?? [];
-  const event = events.find((e) => String(e.id) === String(eventId)) ?? events[0];
-  if (!event) return [];
-  const competitors = ((event.competitions as Array<Record<string, unknown>>)?.[0]?.competitors ?? []) as Array<Record<string, unknown>>;
-  return competitors
-    .map((c) => {
-      const athlete = c.athlete as Record<string, unknown> | undefined;
-      return {
-        id: String(c.id ?? ''),
-        name: String(athlete?.displayName ?? athlete?.fullName ?? ''),
-        worldRanking: undefined,
-      };
-    })
-    .filter((g) => g.id && g.name);
+  if (scoreboardRes.ok) {
+    const sbData = await scoreboardRes.json() as Record<string, unknown>;
+    const events = (sbData.events as Array<Record<string, unknown>>) ?? [];
+    const event = events.find((e) => String(e.id) === String(eventId));
+    if (event) return golfersFromScoreboardEvent(event);
+  }
+
+  // 3. Pre-tournament fallback: look up the event start date from the core API,
+  //    then fetch the scoreboard by date (which correctly returns that week's event)
+  try {
+    const coreRes = await fetch(
+      `https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/${eventId}`,
+      { next: { revalidate: 3600 } }
+    );
+    if (coreRes.ok) {
+      const coreData = await coreRes.json() as Record<string, unknown>;
+      const dateStr = String(coreData.date ?? '').slice(0, 10).replace(/-/g, '');
+      if (dateStr.length === 8) {
+        const dateRes = await fetch(`${SCOREBOARD_BASE}?dates=${dateStr}`, {
+          next: { revalidate: 3600 },
+        });
+        if (dateRes.ok) {
+          const dateData = await dateRes.json() as Record<string, unknown>;
+          const events = (dateData.events as Array<Record<string, unknown>>) ?? [];
+          const event = events.find((e) => String(e.id) === String(eventId)) ?? events[0];
+          if (event) return golfersFromScoreboardEvent(event);
+        }
+      }
+    }
+  } catch {
+    // ignore — return empty below
+  }
+
+  return [];
 }
 
 export async function getLeaderboard(
