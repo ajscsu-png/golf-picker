@@ -18,7 +18,17 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
 
   const draftOrder = computeDraftOrder(participants, tournament.picksPerPerson, tournament.hasSingleDraft);
   const onTheClock: DraftSlot | null = getOnTheClock(draftOrder, picks);
-  const pickedIds = new Set(picks.map((p) => p.golferEspnId));
+
+  // Determine which phase we're currently in so the picker only blocks
+  // golfers already taken in the same phase. Round 0 = single draft;
+  // rounds 1+ = snake draft. Single-draft picks re-enter the pool for the snake.
+  const currentRound = onTheClock?.roundNumber ?? (picks.length > 0 ? picks[picks.length - 1].roundNumber : 0);
+  const inSingleDraft = currentRound === 0;
+  const pickedIds = new Set(
+    picks
+      .filter((p) => inSingleDraft ? p.roundNumber === 0 : p.roundNumber !== 0)
+      .map((p) => p.golferEspnId)
+  );
 
   // Load saved name from localStorage
   useEffect(() => {

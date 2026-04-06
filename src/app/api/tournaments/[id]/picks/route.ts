@@ -62,14 +62,14 @@ export async function POST(
     return NextResponse.json({ error: turnCheck.error }, { status: 409 });
   }
 
-  // 4. Check golfer not already picked
-  const alreadyPicked = await isGolferPicked(params.id, golferEspnId);
+  // 4. Compute position metadata from draft order (needed for phase check)
+  const slot = draftOrder[picks.length];
+
+  // 5. Check golfer not already picked in the same phase
+  const alreadyPicked = await isGolferPicked(params.id, golferEspnId, slot.roundNumber);
   if (alreadyPicked) {
     return NextResponse.json({ error: 'Golfer already picked' }, { status: 409 });
   }
-
-  // 5. Compute position metadata from draft order
-  const slot = draftOrder[picks.length];
 
   // 6. Save the pick
   const pick = await appendPick({

@@ -318,10 +318,17 @@ export async function swapPick(
 
 export async function isGolferPicked(
   tournamentId: string,
-  golferEspnId: string
+  golferEspnId: string,
+  currentRoundNumber: number
 ): Promise<boolean> {
   const rows = await getRows('Picks');
-  return rows.some((r) => r[1] === tournamentId && r[7] === golferEspnId);
+  const inSingleDraft = currentRoundNumber === 0;
+  return rows.some((r) => {
+    if (r[1] !== tournamentId || r[7] !== golferEspnId) return false;
+    const round = parseInt(r[3], 10);
+    // Only block re-picks within the same phase
+    return inSingleDraft ? round === 0 : round !== 0;
+  });
 }
 
 // ─── Scores ──────────────────────────────────────────────────────────────────
