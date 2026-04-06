@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 
   // Step 3: fetch outrights odds for chosen sport
   const oddsRes = await fetch(
-    `${ODDS_API_BASE}/sports/${chosenSport.key}/odds?apiKey=${apiKey}&regions=us&markets=outrights&bookmakers=draftkings,fanduel,betmgm`,
+    `${ODDS_API_BASE}/sports/${chosenSport.key}/odds?apiKey=${apiKey}&regions=us&markets=outrights&bookmakers=draftkings,fanduel,betmgm&oddsFormat=american`,
     { next: { revalidate: 1800 } }
   );
   if (!oddsRes.ok) {
