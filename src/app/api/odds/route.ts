@@ -4,16 +4,28 @@ export const dynamic = 'force-dynamic';
 
 const ODDS_API_BASE = 'https://api.the-odds-api.com/v4';
 
+export interface BookmakerOdds {
+  key: string;
+  title: string;
+  americanOdds: number;
+  oddsDisplay: string;
+}
+
 export interface GolferOdds {
   name: string;
   americanOdds: number;
   oddsDisplay: string;
   impliedProbability: number; // higher = bigger favorite
+  bookmakers: BookmakerOdds[];
 }
 
 function americanToImplied(odds: number): number {
   if (odds > 0) return 100 / (odds + 100);
   return -odds / (-odds + 100);
+}
+
+function formatAmerican(odds: number): string {
+  return odds > 0 ? `+${odds}` : String(odds);
 }
 
 function normalize(s: string): string {
@@ -25,7 +37,6 @@ function nameSimilarity(a: string, b: string): number {
   const nb = normalize(b);
   if (na === nb) return 1;
   if (na.includes(nb) || nb.includes(na)) return 0.8;
-  // word overlap
   const wordsA = new Set(na.split(' '));
   const wordsB = nb.split(' ');
   const overlap = wordsB.filter((w) => wordsA.has(w)).length;
@@ -75,6 +86,8 @@ export async function GET(req: NextRequest) {
   }
   const events = await oddsRes.json() as Array<{
     bookmakers: Array<{
+      key: string;
+      title: string;
       markets: Array<{
         key: string;
         outcomes: Array<{ name: string; price: number }>;
@@ -82,30 +95,48 @@ export async function GET(req: NextRequest) {
     }>;
   }>;
 
-  // Aggregate odds across bookmakers — average implied probability per golfer
-  const golferMap = new Map<string, number[]>();
+  // Aggregate odds: track implied probabilities for averaging, and per-bookmaker raw odds
+  const golferImplied = new Map<string, number[]>();
+  const golferBooks = new Map<string, Map<string, BookmakerOdds>>();
+
   for (const event of events) {
     for (const bookmaker of event.bookmakers) {
       for (const market of bookmaker.markets) {
         if (market.key !== 'outrights') continue;
         for (const outcome of market.outcomes) {
           const implied = americanToImplied(outcome.price);
-          const existing = golferMap.get(outcome.name) ?? [];
-          existing.push(implied);
-          golferMap.set(outcome.name, existing);
+
+          // Average implied probability across bookmakers
+          const probs = golferImplied.get(outcome.name) ?? [];
+          probs.push(implied);
+          golferImplied.set(outcome.name, probs);
+
+          // Store per-bookmaker odds (last seen wins if same book appears multiple times)
+          if (!golferBooks.has(outcome.name)) golferBooks.set(outcome.name, new Map());
+          golferBooks.get(outcome.name)!.set(bookmaker.key, {
+            key: bookmaker.key,
+            title: bookmaker.title,
+            americanOdds: outcome.price,
+            oddsDisplay: formatAmerican(outcome.price),
+          });
         }
       }
     }
   }
 
-  const results: GolferOdds[] = Array.from(golferMap.entries()).map(([name, probs]) => {
+  const results: GolferOdds[] = Array.from(golferImplied.entries()).map(([name, probs]) => {
     const avgProb = probs.reduce((s, p) => s + p, 0) / probs.length;
-    // Convert back to American odds for display
     const americanOdds = avgProb >= 0.5
       ? Math.round(-avgProb / (1 - avgProb) * 100)
       : Math.round((1 - avgProb) / avgProb * 100);
-    const oddsDisplay = americanOdds > 0 ? `+${americanOdds}` : String(americanOdds);
-    return { name, americanOdds, oddsDisplay, impliedProbability: avgProb };
+    const bookmakers = Array.from(golferBooks.get(name)?.values() ?? []);
+    return {
+      name,
+      americanOdds,
+      oddsDisplay: formatAmerican(americanOdds),
+      impliedProbability: avgProb,
+      bookmakers,
+    };
   });
 
   results.sort((a, b) => b.impliedProbability - a.impliedProbability);

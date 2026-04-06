@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { EspnGolfer } from '@/types';
-import type { GolferOdds } from '@/app/api/odds/route';
+import type { GolferOdds, BookmakerOdds } from '@/app/api/odds/route';
 
 interface Props {
   tournamentId: string;
@@ -34,6 +34,8 @@ export default function GolferPicker({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [oddsSource, setOddsSource] = useState<string>('avg');
+  const [availableBooks, setAvailableBooks] = useState<{ key: string; title: string }[]>([]);
 
   useEffect(() => {
     setLoading(true);
@@ -45,6 +47,14 @@ export default function GolferPicker({
       for (const o of oddsData) {
         map.set(normalizeName(o.name), o);
       }
+      // Collect unique bookmakers from all golfers
+      const bookSet = new Map<string, string>();
+      for (const o of oddsData) {
+        for (const b of o.bookmakers ?? []) {
+          bookSet.set(b.key, b.title);
+        }
+      }
+      setAvailableBooks(Array.from(bookSet.entries()).map(([key, title]) => ({ key, title })));
       setOddsMap(map);
       setField(fieldData);
       setLoading(false);
@@ -55,6 +65,18 @@ export default function GolferPicker({
     return oddsMap.get(normalizeName(golfer.name));
   }
 
+  function getDisplayOdds(golfer: EspnGolfer): { display: string; implied: number } | undefined {
+    const odds = getOdds(golfer);
+    if (!odds) return undefined;
+    if (oddsSource === 'avg') return { display: odds.oddsDisplay, implied: odds.impliedProbability };
+    const book = odds.bookmakers?.find((b: BookmakerOdds) => b.key === oddsSource);
+    if (!book) return undefined;
+    const implied = book.americanOdds > 0
+      ? 100 / (book.americanOdds + 100)
+      : -book.americanOdds / (-book.americanOdds + 100);
+    return { display: book.oddsDisplay, implied };
+  }
+
   const available = field
     .filter(
       (g) =>
@@ -63,8 +85,8 @@ export default function GolferPicker({
     )
     .sort((a, b) => {
       if (sortBy === 'odds') {
-        const oa = getOdds(a)?.impliedProbability ?? -1;
-        const ob = getOdds(b)?.impliedProbability ?? -1;
+        const oa = getDisplayOdds(a)?.implied ?? -1;
+        const ob = getDisplayOdds(b)?.implied ?? -1;
         if (oa !== ob) return ob - oa;
       }
       return a.name.localeCompare(b.name);
@@ -144,6 +166,27 @@ export default function GolferPicker({
         </div>
       ) : (
         <>
+          {availableBooks.length > 0 && (
+            <div className="flex gap-1 mb-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setOddsSource('avg')}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${oddsSource === 'avg' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+              >
+                Avg
+              </button>
+              {availableBooks.map((b) => (
+                <button
+                  key={b.key}
+                  type="button"
+                  onClick={() => setOddsSource(b.key)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${oddsSource === b.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+                >
+                  {b.title}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex gap-2 mb-3">
             <input
               type="text"
@@ -174,7 +217,7 @@ export default function GolferPicker({
                   >
                     <span className="font-medium text-gray-800">{g.name}</span>
                     <span className="text-xs text-gray-400 flex gap-2">
-                      {odds && <span className="text-blue-500 font-medium">{odds.oddsDisplay}</span>}
+                      {(() => { const d = getDisplayOdds(g); return d ? <span className="text-blue-500 font-medium">{d.display}</span> : null; })()}
                       {g.worldRanking && <span>WR #{g.worldRanking}</span>}
                     </span>
                   </button>
