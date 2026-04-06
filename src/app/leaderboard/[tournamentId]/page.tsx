@@ -16,7 +16,7 @@ import TournamentFactsCard from '@/components/TournamentFacts';
 import { getTournamentFacts } from '@/lib/tournamentFacts';
 import Link from 'next/link';
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface Props {
   params: { tournamentId: string };
