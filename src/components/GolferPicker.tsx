@@ -20,8 +20,9 @@ function normalizeName(s: string): string {
     .replace(/[æÆ]/g, 'ae')
     .replace(/[ðÐ]/g, 'd')
     .replace(/[þÞ]/g, 'th')
-    // Expand common nickname -> full name (match ESPN short names to DK full names)
+    // Expand common nicknames -> full names (match ESPN short names to DK full names)
     .replace(/\bMatt\b/gi, 'Matthew')
+    .replace(/\bChris\b/gi, 'Christopher')
     .normalize('NFD')                    // decompose accented chars (Å → A + combining ring)
     .replace(/[\u0300-\u036f]/g, '')     // strip combining diacritics
     .toLowerCase()
