@@ -22,14 +22,14 @@ export async function POST(
     return NextResponse.json({ error: 'Participant not found' }, { status: 404 });
   }
 
-  const hasPick = picks.some(
+  const originalPick = picks.find(
     (p) => p.participantName === participantName && p.golferEspnId === oldGolferEspnId
   );
-  if (!hasPick) {
+  if (!originalPick) {
     return NextResponse.json({ error: 'Original pick not found for this participant' }, { status: 404 });
   }
 
-  const alreadyPicked = await isGolferPicked(params.id, newGolferEspnId);
+  const alreadyPicked = await isGolferPicked(params.id, newGolferEspnId, originalPick.roundNumber);
   if (alreadyPicked) {
     return NextResponse.json({ error: `${newGolferName} is already picked by someone else` }, { status: 409 });
   }
