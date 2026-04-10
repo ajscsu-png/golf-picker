@@ -104,7 +104,12 @@ export default function Leaderboard({ rows }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {row.golfers.map((g) => {
+                    {[...row.golfers].sort((a, b) => {
+                      if (a.totalScore === null && b.totalScore === null) return 0;
+                      if (a.totalScore === null) return 1;
+                      if (b.totalScore === null) return -1;
+                      return a.totalScore - b.totalScore;
+                    }).map((g) => {
                       const activeRound = g.r4 !== null ? 4 : g.r3 !== null ? 3 : g.r2 !== null ? 2 : g.r1 !== null ? 1 : 0;
                       const showThru = g.status === 'active' && g.thru !== null && g.thru > 0 && g.thru < 18;
                       const thruCell = (round: number) => showThru && activeRound === round
