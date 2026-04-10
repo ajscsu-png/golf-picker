@@ -344,6 +344,7 @@ const SCORES_HEADER = [
   'r3',
   'r4',
   'status',
+  'thru',
 ];
 
 function rowToScore(r: string[]): GolferScore {
@@ -358,6 +359,7 @@ function rowToScore(r: string[]): GolferScore {
     r3: r[7] !== '' && r[7] !== undefined ? parseInt(r[7], 10) : null,
     r4: r[8] !== '' && r[8] !== undefined ? parseInt(r[8], 10) : null,
     status: (r[9] ?? 'active') as GolferScore['status'],
+    thru: r[10] !== '' && r[10] !== undefined ? parseInt(r[10], 10) : null,
   };
 }
 
@@ -373,6 +375,7 @@ function scoreToRow(s: GolferScore): string[] {
     s.r3 !== null ? String(s.r3) : '',
     s.r4 !== null ? String(s.r4) : '',
     s.status,
+    s.thru !== null ? String(s.thru) : '',
   ];
 }
 

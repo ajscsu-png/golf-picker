@@ -104,27 +104,34 @@ export default function Leaderboard({ rows }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {row.golfers.map((g) => (
-                      <tr key={g.golferEspnId} className={`border-t border-gray-50 ${g.dropped ? 'opacity-40' : ''}`}>
-                        <td className="py-2 px-5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
-                              {g.golferName}
-                            </span>
-                            {statusBadge(g.status, g.dropped, g.bubbleApplied)}
-                            {g.totalScore !== null && gradeBadge(getGrade(g))}
-                          </div>
-                        </td>
-                        <td className="text-center py-2 px-2 text-gray-600">{g.position || '—'}</td>
-                        <td className={`text-center py-2 px-2 ${scoreColor(g.totalScore)}`}>
-                          {scoreDisplay(g.totalScore)}
-                        </td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r1 ?? '—'}</td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r2 ?? '—'}</td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r3 ?? '—'}</td>
-                        <td className="text-center py-2 px-2 text-gray-500">{g.r4 ?? '—'}</td>
-                      </tr>
-                    ))}
+                    {row.golfers.map((g) => {
+                      const activeRound = g.r4 !== null ? 4 : g.r3 !== null ? 3 : g.r2 !== null ? 2 : g.r1 !== null ? 1 : 0;
+                      const showThru = g.status === 'active' && g.thru !== null && g.thru > 0 && g.thru < 18;
+                      const thruCell = (round: number) => showThru && activeRound === round
+                        ? <div className="text-xs text-gray-400 leading-tight">thru {g.thru}</div>
+                        : null;
+                      return (
+                        <tr key={g.golferEspnId} className={`border-t border-gray-50 ${g.dropped ? 'opacity-40' : ''}`}>
+                          <td className="py-2 px-5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
+                                {g.golferName}
+                              </span>
+                              {statusBadge(g.status, g.dropped, g.bubbleApplied)}
+                              {g.totalScore !== null && gradeBadge(getGrade(g))}
+                            </div>
+                          </td>
+                          <td className="text-center py-2 px-2 text-gray-600">{g.position || '—'}</td>
+                          <td className={`text-center py-2 px-2 ${scoreColor(g.totalScore)}`}>
+                            {scoreDisplay(g.totalScore)}
+                          </td>
+                          <td className="text-center py-2 px-2 text-gray-500">{g.r1 ?? '—'}{thruCell(1)}</td>
+                          <td className="text-center py-2 px-2 text-gray-500">{g.r2 ?? '—'}{thruCell(2)}</td>
+                          <td className="text-center py-2 px-2 text-gray-500">{g.r3 ?? '—'}{thruCell(3)}</td>
+                          <td className="text-center py-2 px-2 text-gray-500">{g.r4 ?? '—'}{thruCell(4)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

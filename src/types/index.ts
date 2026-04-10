@@ -48,6 +48,7 @@ export interface GolferScore {
   r2: number | null;
   r3: number | null;
   r4: number | null;
+  thru: number | null;
   status: 'active' | 'cut' | 'wd' | 'dq';
 }
 

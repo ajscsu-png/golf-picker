@@ -177,8 +177,12 @@ export async function getLeaderboard(
   const events = (sbData.events as Array<Record<string, unknown>>) ?? [];
   const event = events.find((e) => String(e.id) === String(eventId)) ?? events[0];
   if (!event) return [];
-  const sbCompetitors = ((event.competitions as Array<Record<string, unknown>>)?.[0]?.competitors ?? []) as Array<Record<string, unknown>>;
-  const parsed = sbCompetitors.map((c) => parseScoreboardCompetitor(c, eventId));
+  const competition = (event.competitions as Array<Record<string, unknown>>)?.[0];
+  const currentRound = typeof (competition?.status as Record<string, unknown>)?.period === 'number'
+    ? (competition.status as Record<string, unknown>).period as number
+    : 1;
+  const sbCompetitors = (competition?.competitors ?? []) as Array<Record<string, unknown>>;
+  const parsed = sbCompetitors.map((c) => parseScoreboardCompetitor(c, eventId, currentRound));
 
   // Compute tied positions: group by totalScore, assign "T{minOrder}" when tied
   const scoreGroups = new Map<string, number[]>();
@@ -225,11 +229,12 @@ function parseSummaryCompetitor(c: Record<string, unknown>, tournamentId: string
     r2: rounds[1],
     r3: rounds[2],
     r4: rounds[3],
+    thru: null,
     status: parseStatus(c),
   };
 }
 
-function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: string): GolferScore {
+function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: string, currentRound: number = 1): GolferScore {
   const athlete = c.athlete as Record<string, unknown> | undefined;
   // Scoreboard linescores: one entry per round, period=round number, displayValue=to-par score
   const linescores = (c.linescores as Array<Record<string, unknown>>) ?? [];
@@ -241,6 +246,10 @@ function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: str
     }
   }
 
+  // Count holes completed in the current round via nested linescores
+  const currentRoundLs = linescores.find((ls) => typeof ls.period === 'number' && ls.period === currentRound);
+  const holesPlayed = (currentRoundLs?.linescores as Array<unknown> | undefined)?.length ?? 0;
+
   return {
     tournamentId,
     golferEspnId: String(c.id ?? ''),
@@ -251,6 +260,7 @@ function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: str
     r2: roundMap.get(2) ?? null,
     r3: roundMap.get(3) ?? null,
     r4: roundMap.get(4) ?? null,
+    thru: holesPlayed > 0 ? holesPlayed : null,
     status: parseStatus(c),
   };
 }
