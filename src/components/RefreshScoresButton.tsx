@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function RefreshScoresButton() {
+interface Props {
+  lastUpdated?: string | null;
+  autoRefresh?: boolean;
+}
+
+export default function RefreshScoresButton({ lastUpdated, autoRefresh }: Props) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const router = useRouter();
@@ -33,8 +38,27 @@ export default function RefreshScoresButton() {
     }
   }
 
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(async () => {
+      try {
+        const res = await fetch('/api/cron/update-scores');
+        if (!res.ok) return;
+        const data = await res.json() as Record<string, unknown>;
+        const results = data.updated as Array<{ golferCount: number }> | undefined;
+        if ((results?.[0]?.golferCount ?? 0) > 0) router.refresh();
+      } catch {
+        // silent failure
+      }
+    }, 90_000);
+    return () => clearInterval(id);
+  }, [autoRefresh, router]);
+
   return (
     <div className="flex items-center gap-3">
+      {lastUpdated && (
+        <span className="text-xs text-gray-400">Updated {lastUpdated}</span>
+      )}
       {status && (
         <span className={`text-xs ${status.ok ? 'text-gray-400' : 'text-red-500'}`}>
           {status.msg}

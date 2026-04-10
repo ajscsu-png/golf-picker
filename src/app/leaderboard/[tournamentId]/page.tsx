@@ -6,6 +6,7 @@ import {
   getScores,
   getCuts,
   getTrashMessages,
+  getConfig,
 } from '@/lib/sheets';
 import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
@@ -109,14 +110,23 @@ function buildLeaderboard(
 }
 
 export default async function LeaderboardPage({ params }: Props) {
-  const [tournament, participants, picks, scores, cuts, trashMessages] = await Promise.all([
+  const [tournament, participants, picks, scores, cuts, trashMessages, lastUpdatedRaw] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),
     getPicks(params.tournamentId),
     getScores(params.tournamentId),
     getCuts(params.tournamentId),
     getTrashMessages(params.tournamentId),
+    getConfig('last_scores_updated'),
   ]);
+
+  const lastUpdated = (() => {
+    if (!lastUpdatedRaw) return null;
+    const mins = Math.floor((Date.now() - new Date(lastUpdatedRaw).getTime()) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins === 1) return '1 min ago';
+    return `${mins} min ago`;
+  })();
 
   if (!tournament) notFound();
 
@@ -147,7 +157,7 @@ export default async function LeaderboardPage({ params }: Props) {
               ✂ Make Cuts →
             </Link>
           )}
-          {tournament.status === 'active' && <RefreshScoresButton />}
+          {tournament.status === 'active' && <RefreshScoresButton lastUpdated={lastUpdated} autoRefresh />}
         </div>
       </div>
 

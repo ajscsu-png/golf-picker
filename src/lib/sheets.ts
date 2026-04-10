@@ -391,6 +391,7 @@ export async function upsertScores(incoming: GolferScore[]): Promise<void> {
   const otherRows = allRows.filter((r) => r[0] !== tournamentId);
   const newRows = incoming.map(scoreToRow);
   await clearAndWriteRows('Scores', SCORES_HEADER, [...otherRows, ...newRows]);
+  await setConfig('last_scores_updated', new Date().toISOString());
 }
 
 // ─── Trash Talk ──────────────────────────────────────────────────────────────
