@@ -111,10 +111,12 @@ export default function Leaderboard({ rows }: Props) {
                       return a.totalScore - b.totalScore;
                     }).map((g) => {
                       const activeRound = g.r4 !== null ? 4 : g.r3 !== null ? 3 : g.r2 !== null ? 2 : g.r1 !== null ? 1 : 0;
-                      const showThru = g.status === 'active' && g.thru !== null && g.thru > 0 && g.thru < 18;
-                      const thruCell = (round: number) => showThru && activeRound === round
-                        ? <div className="text-xs text-gray-400 leading-tight">thru {g.thru}</div>
-                        : null;
+                      const thruCell = (round: number) => {
+                        if (activeRound !== round || g.status !== 'active' || g.thru === null) return null;
+                        if (g.thru === 18) return <div className="text-xs text-gray-400 leading-tight">F</div>;
+                        if (g.thru > 0) return <div className="text-xs text-gray-400 leading-tight">thru {g.thru}</div>;
+                        return null;
+                      };
                       return (
                         <tr key={g.golferEspnId} className={`border-t border-gray-50 ${g.dropped ? 'opacity-40' : ''}`}>
                           <td className="py-2 px-5">
@@ -133,10 +135,10 @@ export default function Leaderboard({ rows }: Props) {
                           <td className={`text-center py-2 px-2 ${scoreColor(g.totalScore)}`}>
                             {scoreDisplay(g.totalScore)}
                           </td>
-                          <td className="text-center py-2 px-2 text-gray-500">{g.r1 ?? '—'}{thruCell(1)}</td>
-                          <td className="text-center py-2 px-2 text-gray-500">{g.r2 ?? '—'}{thruCell(2)}</td>
-                          <td className="text-center py-2 px-2 text-gray-500">{g.r3 ?? '—'}{thruCell(3)}</td>
-                          <td className="text-center py-2 px-2 text-gray-500">{g.r4 ?? '—'}{thruCell(4)}</td>
+                          <td className={`text-center py-2 px-2 ${scoreColor(g.r1)}`}>{scoreDisplay(g.r1)}{thruCell(1)}</td>
+                          <td className={`text-center py-2 px-2 ${scoreColor(g.r2)}`}>{scoreDisplay(g.r2)}{thruCell(2)}</td>
+                          <td className={`text-center py-2 px-2 ${scoreColor(g.r3)}`}>{scoreDisplay(g.r3)}{thruCell(3)}</td>
+                          <td className={`text-center py-2 px-2 ${scoreColor(g.r4)}`}>{scoreDisplay(g.r4)}{thruCell(4)}</td>
                         </tr>
                       );
                     })}
