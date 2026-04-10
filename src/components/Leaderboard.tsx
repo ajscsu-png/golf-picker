@@ -83,7 +83,7 @@ export default function Leaderboard({ rows }: Props) {
                 {row.rank}
               </span>
               <span className="flex-1 font-semibold text-gray-900">
-                {row.participant.name}{row.participant.name === 'Kyle' ? ' 🤡' : ''}
+                {row.participant.name}{row.participant.name === 'Kyle' ? ' 🤡' : row.participant.name === 'Connor' ? ' 🍆' : ''}
               </span>
               <span className={`text-xl font-bold ${scoreColor(row.totalScore)}`}>
                 {scoreDisplay(row.totalScore)}
