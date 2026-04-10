@@ -33,12 +33,6 @@ function buildLeaderboard(
 ): ParticipantLeaderboardRow[] {
   const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
 
-  // Bubble score = worst final totalScore among golfers who made the cut (status active)
-  const madeTheCut = scores.filter((s) => s.status === 'active' && s.totalScore !== null);
-  const bubbleScore = madeTheCut.length > 0
-    ? Math.max(...madeTheCut.map((s) => s.totalScore as number))
-    : null;
-
   const rows = participants.map((participant) => {
     const myPicks = picks
       .filter((p) => p.participantName === participant.name)
@@ -48,43 +42,37 @@ function buildLeaderboard(
 
     const golfers = myPicks.map((pick) => {
       const score = scoreMap.get(pick.golferEspnId);
-      const cut = myCutMap.get(pick.golferEspnId);
-      const dropped = !!cut;
-      const isThirdDrop = cut?.dropNumber === 3;
-      const missedCut = score && score.status !== 'active';
-
-      // 3rd drop on a missed-cut golfer → apply bubble score penalty instead of excluding
-      // Bubble applies when: golfer missed the cut AND wasn't dropped AND cuts are enabled
-      // This covers both "too many missed cuts" and the explicit 3rd-drop mechanic
-      const isUndroppedMissedCut = cutsPerPerson > 0 && !dropped && !!missedCut;
-      const applyBubble = (isThirdDrop || isUndroppedMissedCut) && bubbleScore !== null;
-
-      let effectiveScore = score ? { ...score, picked: true, dropped, bubbleApplied: false } : {
-        tournamentId: pick.tournamentId,
-        golferEspnId: pick.golferEspnId,
-        golferName: pick.golferName,
-        position: '',
-        totalScore: null,
-        r1: null, r2: null, r3: null, r4: null,
-        thru: null,
-        status: 'active' as const,
-        picked: true,
-        dropped,
-        bubbleApplied: false,
-      };
-
-      if (applyBubble) {
-        effectiveScore = { ...effectiveScore, totalScore: bubbleScore, dropped: false, bubbleApplied: true };
-      }
-
-      return effectiveScore;
+      const dropped = !!myCutMap.get(pick.golferEspnId);
+      return score
+        ? { ...score, picked: true, dropped, bubbleApplied: false }
+        : {
+            tournamentId: pick.tournamentId,
+            golferEspnId: pick.golferEspnId,
+            golferName: pick.golferName,
+            position: '',
+            totalScore: null,
+            r1: null, r2: null, r3: null, r4: null,
+            thru: null,
+            status: 'active' as const,
+            picked: true,
+            dropped,
+            bubbleApplied: false,
+          };
     });
 
-    const scoredGolfers = golfers.filter((g) => g.totalScore !== null && !g.dropped);
-    const totalScore =
-      scoredGolfers.length > 0
-        ? scoredGolfers.reduce((sum, g) => sum + (g.totalScore ?? 0), 0)
-        : null;
+    // Sort non-dropped scored golfers best-first, then take the best N
+    // where N = total scored - cutsPerPerson (i.e. best 4 if cutsPerPerson=2)
+    const scoredGolfers = golfers
+      .filter((g) => g.totalScore !== null && !g.dropped)
+      .sort((a, b) => (a.totalScore as number) - (b.totalScore as number));
+
+    const countingCount = cutsPerPerson > 0 && scoredGolfers.length > cutsPerPerson
+      ? scoredGolfers.length - cutsPerPerson
+      : scoredGolfers.length;
+
+    const totalScore = countingCount > 0
+      ? scoredGolfers.slice(0, countingCount).reduce((sum, g) => sum + (g.totalScore as number), 0)
+      : null;
 
     return { participant, golfers, totalScore, rank: 0 };
   });
