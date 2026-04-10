@@ -4,6 +4,24 @@ const SUMMARY_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/sum
 const SCOREBOARD_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const EVENTS_URL = 'https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events';
 
+const TZ_OFFSETS: Record<string, number> = {
+  PDT: -7, PST: -8, EDT: -4, EST: -5, CDT: -5, CST: -6, MDT: -6, MST: -7,
+};
+
+function parseTeeTime(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const match = raw.match(/(\d{1,2}):(\d{2}):\d{2}\s+([A-Z]{2,4})/);
+  if (!match) return null;
+  const srcHours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const srcOffset = TZ_OFFSETS[match[3]];
+  if (srcOffset === undefined) return null;
+  const cdtHours = ((srcHours - srcOffset + (-5) + 24) % 24);
+  const ampm = cdtHours >= 12 ? 'PM' : 'AM';
+  const display = cdtHours % 12 || 12;
+  return `${display}:${minutes} ${ampm}`;
+}
+
 function parseScore(raw: string | undefined | null): number | null {
   if (!raw || raw === '--' || raw === '') return null;
   if (raw === 'E') return 0;
@@ -230,6 +248,7 @@ function parseSummaryCompetitor(c: Record<string, unknown>, tournamentId: string
     r3: rounds[2],
     r4: rounds[3],
     thru: null,
+    teeTime: null,
     status: parseStatus(c),
   };
 }
@@ -250,6 +269,13 @@ function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: str
   const currentRoundLs = linescores.find((ls) => typeof ls.period === 'number' && ls.period === currentRound);
   const holesPlayed = (currentRoundLs?.linescores as Array<unknown> | undefined)?.length ?? 0;
 
+  // Extract tee time from current round's linescore statistics (datetime-looking stat entry)
+  const roundStats = ((currentRoundLs?.statistics as Record<string, unknown>)
+    ?.categories as Array<Record<string, unknown>>)?.[0]
+    ?.stats as Array<Record<string, unknown>> | undefined;
+  const teeStat = roundStats?.find((s) => /\d{1,2}:\d{2}:\d{2}/.test(String(s.displayValue ?? '')));
+  const teeTime = parseTeeTime(teeStat ? String(teeStat.displayValue) : null);
+
   return {
     tournamentId,
     golferEspnId: String(c.id ?? ''),
@@ -261,6 +287,7 @@ function parseScoreboardCompetitor(c: Record<string, unknown>, tournamentId: str
     r3: roundMap.get(3) ?? null,
     r4: roundMap.get(4) ?? null,
     thru: holesPlayed > 0 ? holesPlayed : null,
+    teeTime,
     status: parseStatus(c),
   };
 }

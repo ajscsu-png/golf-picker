@@ -49,6 +49,7 @@ export interface GolferScore {
   r3: number | null;
   r4: number | null;
   thru: number | null;
+  teeTime: string | null;
   status: 'active' | 'cut' | 'wd' | 'dq';
 }
 

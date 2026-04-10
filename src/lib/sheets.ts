@@ -345,6 +345,7 @@ const SCORES_HEADER = [
   'r4',
   'status',
   'thru',
+  'tee_time',
 ];
 
 function rowToScore(r: string[]): GolferScore {
@@ -360,6 +361,7 @@ function rowToScore(r: string[]): GolferScore {
     r4: r[8] !== '' && r[8] !== undefined ? parseInt(r[8], 10) : null,
     status: (r[9] ?? 'active') as GolferScore['status'],
     thru: r[10] !== '' && r[10] !== undefined ? parseInt(r[10], 10) : null,
+    teeTime: r[11] !== '' && r[11] !== undefined ? r[11] : null,
   };
 }
 
@@ -376,6 +378,7 @@ function scoreToRow(s: GolferScore): string[] {
     s.r4 !== null ? String(s.r4) : '',
     s.status,
     s.thru !== null ? String(s.thru) : '',
+    s.teeTime ?? '',
   ];
 }
 

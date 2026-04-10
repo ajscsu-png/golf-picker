@@ -53,6 +53,7 @@ function buildLeaderboard(
             totalScore: null,
             r1: null, r2: null, r3: null, r4: null,
             thru: null,
+            teeTime: null,
             status: 'active' as const,
             picked: true,
             dropped,

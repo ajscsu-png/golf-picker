@@ -122,6 +122,9 @@ export default function Leaderboard({ rows }: Props) {
                               <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
                                 {g.golferName}
                               </span>
+                              {g.teeTime && (
+                                <span className="text-xs text-gray-400">{g.teeTime}</span>
+                              )}
                               {statusBadge(g.status, g.dropped, g.bubbleApplied)}
                               {g.totalScore !== null && gradeBadge(getGrade(g))}
                             </div>
