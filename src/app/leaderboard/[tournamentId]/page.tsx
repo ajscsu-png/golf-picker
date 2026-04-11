@@ -61,14 +61,18 @@ function buildLeaderboard(
           };
     });
 
-    // Sort non-dropped scored golfers best-first, then take the best N
-    // where N = total scored - cutsPerPerson (i.e. best 4 if cutsPerPerson=2)
+    // Sort non-dropped scored golfers best-first, then take the best N.
+    // Only exclude (cutsPerPerson - droppedCount) additional golfers beyond
+    // those already explicitly dropped, so submitted cuts don't double-count.
+    const droppedCount = golfers.filter((g) => g.dropped).length;
+    const additionalToExclude = Math.max(0, cutsPerPerson - droppedCount);
+
     const scoredGolfers = golfers
       .filter((g) => g.totalScore !== null && !g.dropped)
       .sort((a, b) => (a.totalScore as number) - (b.totalScore as number));
 
-    const countingCount = cutsPerPerson > 0 && scoredGolfers.length > cutsPerPerson
-      ? scoredGolfers.length - cutsPerPerson
+    const countingCount = additionalToExclude > 0 && scoredGolfers.length > additionalToExclude
+      ? scoredGolfers.length - additionalToExclude
       : scoredGolfers.length;
 
     const totalScore = countingCount > 0
