@@ -2,7 +2,7 @@ import { getTournaments, getParticipants, getPicks, getScores, getCuts } from '@
 import type { GolferScore, Cut } from '@/types';
 import Link from 'next/link';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 interface TournamentResult {
   tournamentId: string;
