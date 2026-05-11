@@ -191,7 +191,7 @@ export default async function LeaderboardPage({ params }: Props) {
       ) : scores.length === 0 ? (
         <div>
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-sm">
-            No scores yet — scores update automatically every 15 minutes once the tournament begins.
+            No scores yet — use Refresh Scores once the tournament begins.
           </div>
           {tournament.hasSingleDraft ? (
             <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} />
