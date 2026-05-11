@@ -15,6 +15,7 @@ import RefreshScoresButton from '@/components/RefreshScoresButton';
 import TrashTalk from '@/components/TrashTalk';
 import TournamentFactsCard from '@/components/TournamentFacts';
 import { getTournamentFacts } from '@/lib/tournamentFacts';
+import { findScoreForPick } from '@/lib/golferIdentity';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -31,8 +32,6 @@ function buildLeaderboard(
   cutsPerPerson: number,
   roundNumbers?: number[]
 ): ParticipantLeaderboardRow[] {
-  const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
-
   const rows = participants.map((participant) => {
     const myPicks = picks
       .filter((p) => p.participantName === participant.name)
@@ -41,7 +40,7 @@ function buildLeaderboard(
     const myCutMap = new Map(myCuts.map((c) => [c.golferEspnId, c]));
 
     const golfers = myPicks.map((pick) => {
-      const score = scoreMap.get(pick.golferEspnId);
+      const score = findScoreForPick(scores, pick);
       const dropped = !!myCutMap.get(pick.golferEspnId);
       return score
         ? { ...score, picked: true, dropped, bubbleApplied: false }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { EspnGolfer } from '@/types';
 import type { GolferOdds, BookmakerOdds } from '@/app/api/odds/route';
+import { buildDraftField, normalizeGolferName } from '@/lib/golferIdentity';
 
 interface Props {
   tournamentId: string;
@@ -10,23 +11,8 @@ interface Props {
   tournamentName: string;
   participantName: string;
   pickedIds: Set<string>;
+  pickedNames: Set<string>;
   onPickSubmitted: () => void;
-}
-
-function normalizeName(s: string): string {
-  return s
-    // Transliterate chars that don't decompose via NFD
-    .replace(/[øØ]/g, 'o')
-    .replace(/[æÆ]/g, 'ae')
-    .replace(/[ðÐ]/g, 'd')
-    .replace(/[þÞ]/g, 'th')
-    // Expand common nicknames -> full names (match ESPN short names to DK full names)
-    .replace(/\bMatt\b/gi, 'Matthew')
-    .replace(/\bChris\b/gi, 'Christopher')
-    .normalize('NFD')                    // decompose accented chars (Å → A + combining ring)
-    .replace(/[\u0300-\u036f]/g, '')     // strip combining diacritics
-    .toLowerCase()
-    .replace(/[^a-z]/g, '');            // strip everything except letters
 }
 
 export default function GolferPicker({
@@ -35,6 +21,7 @@ export default function GolferPicker({
   tournamentName,
   participantName,
   pickedIds,
+  pickedNames,
   onPickSubmitted,
 }: Props) {
   const [field, setField] = useState<EspnGolfer[]>([]);
@@ -55,26 +42,27 @@ export default function GolferPicker({
       fetch(`/api/espn/field/${espnEventId}`).then((r) => r.json()) as Promise<EspnGolfer[]>,
       fetch(`/api/odds?tournament=${encodeURIComponent(tournamentName)}`).then((r) => r.json()).catch(() => []) as Promise<GolferOdds[]>,
     ]).then(([fieldData, oddsData]) => {
+      const odds = Array.isArray(oddsData) ? oddsData : [];
       const map = new Map<string, GolferOdds>();
-      for (const o of oddsData) {
-        map.set(normalizeName(o.name), o);
+      for (const o of odds) {
+        map.set(normalizeGolferName(o.name), o);
       }
       // Collect unique bookmakers from all golfers
       const bookSet = new Map<string, string>();
-      for (const o of oddsData) {
+      for (const o of odds) {
         for (const b of o.bookmakers ?? []) {
           bookSet.set(b.key, b.title);
         }
       }
       setAvailableBooks(Array.from(bookSet.entries()).map(([key, title]) => ({ key, title })));
       setOddsMap(map);
-      setField(fieldData);
+      setField(buildDraftField(fieldData, odds));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [espnEventId, tournamentName]);
 
   function getOdds(golfer: EspnGolfer): GolferOdds | undefined {
-    return oddsMap.get(normalizeName(golfer.name));
+    return oddsMap.get(normalizeGolferName(golfer.name));
   }
 
   function getDisplayOdds(golfer: EspnGolfer): { display: string; implied: number } | undefined {
@@ -93,6 +81,7 @@ export default function GolferPicker({
     .filter(
       (g) =>
         !pickedIds.has(g.id) &&
+        !pickedNames.has(normalizeGolferName(g.name)) &&
         (search === '' || g.name.toLowerCase().includes(search.toLowerCase()))
     )
     .sort((a, b) => {

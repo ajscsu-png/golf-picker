@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Participant, Pick, Cut, GolferScore } from '@/types';
+import { findScoreForPick } from '@/lib/golferIdentity';
 
 interface Props {
   tournamentId: string;
@@ -27,7 +28,6 @@ export default function CutSelector({
   existingCuts,
   scores,
 }: Props) {
-  const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
   const [selectedParticipant, setSelectedParticipant] = useState('');
   // Ordered array — position in array = drop number (index 0 = drop 1, etc.)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -47,7 +47,7 @@ export default function CutSelector({
       // Auto-select golfers who missed the cut, up to the limit
       const myPicks = picks.filter((p) => p.participantName === name);
       const missedCut = myPicks
-        .filter((p) => scoreMap.get(p.golferEspnId)?.status === 'cut')
+        .filter((p) => findScoreForPick(scores, p)?.status === 'cut')
         .map((p) => p.golferEspnId)
         .slice(0, cutsPerPerson);
       setSelectedIds(missedCut);
@@ -150,7 +150,7 @@ export default function CutSelector({
                 const isDisabled = !isSelected && selectedIds.length >= cutsPerPerson;
                 const dropNum = isSelected ? dropIndex + 1 : null;
                 const isThirdDrop = dropNum === 3;
-                const score = scoreMap.get(pick.golferEspnId);
+                const score = findScoreForPick(scores, pick);
                 const missedCut = score?.status === 'cut';
                 return (
                   <button

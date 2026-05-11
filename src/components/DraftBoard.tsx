@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Tournament, Participant, Pick, DraftSlot } from '@/types';
 import { computeDraftOrder, getOnTheClock } from '@/lib/draft';
+import { normalizeGolferName } from '@/lib/golferIdentity';
 import GolferPicker from './GolferPicker';
 
 interface Props {
@@ -28,6 +29,11 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
     picks
       .filter((p) => inSingleDraft ? p.roundNumber === 0 : p.roundNumber !== 0)
       .map((p) => p.golferEspnId)
+  );
+  const pickedNames = new Set(
+    picks
+      .filter((p) => inSingleDraft ? p.roundNumber === 0 : p.roundNumber !== 0)
+      .map((p) => normalizeGolferName(p.golferName))
   );
 
   // Load saved name from localStorage
@@ -129,6 +135,7 @@ export default function DraftBoard({ tournament, participants, initialPicks }: P
           tournamentName={tournament.name}
           participantName={myName}
           pickedIds={pickedIds}
+          pickedNames={pickedNames}
           onPickSubmitted={refreshPicks}
         />
       )}

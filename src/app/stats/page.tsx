@@ -1,5 +1,6 @@
 import { getTournaments, getParticipants, getPicks, getScores, getCuts } from '@/lib/sheets';
 import type { GolferScore, Cut } from '@/types';
+import { findScoreForPick } from '@/lib/golferIdentity';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,6 @@ function computeScore(
   scores: GolferScore[],
   cuts: Cut[]
 ): number | null {
-  const scoreMap = new Map(scores.map((s) => [s.golferEspnId, s]));
   const myCuts = cuts.filter((c) => c.participantName === participantName);
   const myCutMap = new Map(myCuts.map((c) => [c.golferEspnId, c]));
 
@@ -31,7 +31,7 @@ function computeScore(
   const myPicks = picks.filter((p) => p.participantName === participantName);
   const scored = myPicks.map((p) => {
     const cut = myCutMap.get(p.golferEspnId);
-    const score = scoreMap.get(p.golferEspnId);
+    const score = findScoreForPick(scores, p);
     if (!cut) return score?.totalScore ?? null;
     if (cut.dropNumber === 3 && score?.status !== 'active' && bubbleScore !== null) return bubbleScore;
     return null; // drops 1 & 2 excluded
