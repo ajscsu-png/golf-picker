@@ -130,7 +130,7 @@ export default function TrashTalk({ tournamentId, participants, initialMessages 
       <div className="divide-y divide-gray-50">
         {messages.length === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-gray-400">
-            No trash talk yet — don't be shy.
+            No trash talk yet — don&apos;t be shy.
           </p>
         ) : (
           messages.map((msg) => (

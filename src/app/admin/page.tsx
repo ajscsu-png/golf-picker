@@ -8,6 +8,8 @@ interface ParticipantEntry {
   draftPosition: number;
 }
 
+const PLAYER_NAMES = ['Andy', 'Connor', 'Kyle', 'Tim', 'Brad', 'Bill', 'Wyatt', 'Andrew'];
+
 export default function AdminPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [espnEvents, setEspnEvents] = useState<EspnEvent[]>([]);
@@ -42,9 +44,8 @@ export default function AdminPage() {
 
   // Participants form
   const [selectedTournament, setSelectedTournament] = useState('');
-  const DEFAULT_PARTICIPANTS = ['Andy', 'Connor', 'Kyle', 'Tim', 'Brad', 'Bill', 'Wyatt', 'Andrew'];
   const [participants, setParticipants] = useState<ParticipantEntry[]>(
-    DEFAULT_PARTICIPANTS.map((name, i) => ({ name, draftPosition: i + 1 }))
+    PLAYER_NAMES.map((name, i) => ({ name, draftPosition: i + 1 }))
   );
   const [pSubmitting, setPSubmitting] = useState(false);
   const [pMessage, setPMessage] = useState('');
@@ -60,9 +61,8 @@ export default function AdminPage() {
   const [deleteMessage, setDeleteMessage] = useState('');
 
   // Phone directory
-  const DEFAULT_PLAYER_NAMES = ['Andy', 'Connor', 'Kyle', 'Tim', 'Brad', 'Bill', 'Wyatt', 'Andrew'];
   const [phoneEntries, setPhoneEntries] = useState<Array<{ name: string; phone: string }>>(
-    DEFAULT_PLAYER_NAMES.map((name) => ({ name, phone: '' }))
+    PLAYER_NAMES.map((name) => ({ name, phone: '' }))
   );
   const [phoneSubmitting, setPhoneSubmitting] = useState(false);
   const [phoneMessage, setPhoneMessage] = useState('');
@@ -89,7 +89,7 @@ export default function AdminPage() {
       .then((saved: Array<{ name: string; phone: string }>) => {
         if (saved.length > 0) {
           setPhoneEntries(
-            DEFAULT_PLAYER_NAMES.map((name) => ({
+            PLAYER_NAMES.map((name) => ({
               name,
               phone: saved.find((p) => p.name === name)?.phone ?? '',
             }))
@@ -493,7 +493,7 @@ export default function AdminPage() {
                 onChange={(e) => {
                   const n = Math.max(2, Math.min(20, parseInt(e.target.value) || 2));
                   setTPlayerCount(String(n));
-                  setParticipants(Array.from({ length: n }, (_, i) => ({ name: DEFAULT_PARTICIPANTS[i] ?? '', draftPosition: i + 1 })));
+                  setParticipants(Array.from({ length: n }, (_, i) => ({ name: PLAYER_NAMES[i] ?? '', draftPosition: i + 1 })));
                 }}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
