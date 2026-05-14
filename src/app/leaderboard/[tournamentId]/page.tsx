@@ -14,7 +14,9 @@ import LeaderboardToggle from '@/components/LeaderboardToggle';
 import RefreshScoresButton from '@/components/RefreshScoresButton';
 import TrashTalk from '@/components/TrashTalk';
 import TournamentFactsCard from '@/components/TournamentFacts';
+import BroadcastInfoCard from '@/components/BroadcastInfo';
 import { getTournamentFacts } from '@/lib/tournamentFacts';
+import { getBroadcastInfo } from '@/lib/broadcastSchedule';
 import { findScoreForPick } from '@/lib/golferIdentity';
 import Link from 'next/link';
 
@@ -130,6 +132,7 @@ export default async function LeaderboardPage({ params }: Props) {
     ? buildLeaderboard(participants, picks, scores, cuts, tournament.cutsPerPerson, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     : [];
   const facts = getTournamentFacts(tournament.name);
+  const broadcastInfo = getBroadcastInfo(tournament.name, tournament.year);
 
   // Projected cut line: use best score among officially cut golfers if available,
   // otherwise project using the 50th active golfer (Masters cuts top 50 + ties)
@@ -175,6 +178,8 @@ export default async function LeaderboardPage({ params }: Props) {
       </div>
 
       {facts && <TournamentFactsCard facts={facts} />}
+
+      {broadcastInfo && <BroadcastInfoCard info={broadcastInfo} />}
 
       {cutLine !== null && tournament.status === 'active' && (
         <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600">
