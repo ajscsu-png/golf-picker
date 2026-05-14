@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { ParticipantLeaderboardRow, GolferScore } from '@/types';
+import { participantNameSuffix } from '@/lib/leaderboardDecorations';
+import { golferTeeTimeLabel } from '@/lib/leaderboardDisplay';
 
 function scoreDisplay(score: number | null): string {
   if (score === null) return '—';
@@ -83,7 +85,7 @@ export default function Leaderboard({ rows }: Props) {
                 {row.rank}
               </span>
               <span className="flex-1 font-semibold text-gray-900">
-                {row.participant.name}{row.participant.name === 'Kyle' ? ' 🤡' : row.participant.name === 'Connor' ? ' 🍆' : ''}
+                {row.participant.name}{participantNameSuffix(row, rows)}
               </span>
               <span className={`text-xl font-bold ${scoreColor(row.totalScore)}`}>
                 {scoreDisplay(row.totalScore)}
@@ -112,6 +114,7 @@ export default function Leaderboard({ rows }: Props) {
                       if (b.totalScore === null) return -1;
                       return a.totalScore - b.totalScore;
                     }).map((g) => {
+                      const teeTimeLabel = golferTeeTimeLabel(g);
                       const activeRound = g.r4 !== null ? 4 : g.r3 !== null ? 3 : g.r2 !== null ? 2 : g.r1 !== null ? 1 : 0;
                       const thruCell = (round: number) => {
                         if (activeRound !== round || g.status !== 'active' || g.thru === null) return null;
@@ -126,8 +129,8 @@ export default function Leaderboard({ rows }: Props) {
                               <span className={g.status !== 'active' || g.dropped ? 'text-gray-400 line-through' : 'text-gray-800'}>
                                 {g.golferName}
                               </span>
-                              {g.teeTime && (
-                                <span className="text-xs text-gray-400">{g.teeTime}</span>
+                              {teeTimeLabel && (
+                                <span className="text-xs text-gray-400">{teeTimeLabel}</span>
                               )}
                               {statusBadge(g.status, g.dropped, g.bubbleApplied)}
                               {g.totalScore !== null && gradeBadge(getGrade(g))}

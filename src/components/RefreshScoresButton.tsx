@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getUpdatedGolferCount } from '@/lib/scoreRefresh';
 
 interface Props {
+  tournamentId?: string;
   lastUpdated?: string | null;
   autoRefresh?: boolean;
 }
 
-export default function RefreshScoresButton({ lastUpdated, autoRefresh }: Props) {
+export default function RefreshScoresButton({ tournamentId, lastUpdated, autoRefresh }: Props) {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
   const router = useRouter();
@@ -27,8 +29,7 @@ export default function RefreshScoresButton({ lastUpdated, autoRefresh }: Props)
         setStatus({ ok: false, msg: String(data.message) });
         return;
       }
-      const results = data.updated as Array<{ golferCount: number }> | undefined;
-      const count = results?.[0]?.golferCount ?? 0;
+      const count = getUpdatedGolferCount(data, tournamentId);
       setStatus({ ok: count > 0, msg: count > 0 ? `Updated ${count} golfers` : 'No scores found' });
       if (count > 0) router.refresh();
     } catch {
@@ -40,19 +41,26 @@ export default function RefreshScoresButton({ lastUpdated, autoRefresh }: Props)
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = setInterval(async () => {
+
+    let cancelled = false;
+    const refreshSilently = async () => {
       try {
         const res = await fetch('/api/cron/update-scores');
         if (!res.ok) return;
         const data = await res.json() as Record<string, unknown>;
-        const results = data.updated as Array<{ golferCount: number }> | undefined;
-        if ((results?.[0]?.golferCount ?? 0) > 0) router.refresh();
+        if (!cancelled && getUpdatedGolferCount(data, tournamentId) > 0) router.refresh();
       } catch {
         // silent failure
       }
-    }, 90_000);
-    return () => clearInterval(id);
-  }, [autoRefresh, router]);
+    };
+
+    refreshSilently();
+    const id = setInterval(refreshSilently, 90_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [autoRefresh, router, tournamentId]);
 
   return (
     <div className="flex items-center gap-3">

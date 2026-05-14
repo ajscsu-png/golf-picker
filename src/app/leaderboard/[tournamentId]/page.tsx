@@ -168,7 +168,9 @@ export default async function LeaderboardPage({ params }: Props) {
               ✂ Make Cuts →
             </Link>
           )}
-          {tournament.status === 'active' && <RefreshScoresButton lastUpdated={lastUpdated} autoRefresh />}
+          {tournament.status === 'active' && (
+            <RefreshScoresButton tournamentId={tournament.id} lastUpdated={lastUpdated} autoRefresh />
+          )}
         </div>
       </div>
 
