@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const JOKES = [
   "Golf is like sex — you don't have to be good at it to enjoy it.",
@@ -90,7 +90,11 @@ const JOKES = [
 ];
 
 export default function GolfJoke() {
-  const [joke] = useState(() => JOKES[Math.floor(Math.random() * JOKES.length)]);
+  const [joke, setJoke] = useState(JOKES[0]);
+
+  useEffect(() => {
+    setJoke(JOKES[Math.floor(Math.random() * JOKES.length)]);
+  }, []);
 
   return (
     <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3 text-sm text-yellow-800 italic text-center">
