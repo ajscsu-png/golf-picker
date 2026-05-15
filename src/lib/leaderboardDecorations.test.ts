@@ -13,6 +13,7 @@ function row(name: string, totalScore: number | null): ParticipantLeaderboardRow
     },
     golfers: [],
     totalScore,
+    projectedTotalScore: totalScore,
     rank: 1,
   };
 }

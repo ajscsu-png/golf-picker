@@ -76,5 +76,6 @@ export interface ParticipantLeaderboardRow {
   participant: Participant;
   golfers: Array<GolferScore & { picked: boolean; dropped: boolean; bubbleApplied: boolean }>;
   totalScore: number | null;
+  projectedTotalScore: number | null;
   rank: number;
 }

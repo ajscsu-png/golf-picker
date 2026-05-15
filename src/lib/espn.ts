@@ -4,21 +4,14 @@ const SUMMARY_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/sum
 const SCOREBOARD_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const EVENTS_URL = 'https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events';
 
-const TZ_OFFSETS: Record<string, number> = {
-  PDT: -7, PST: -8, EDT: -4, EST: -5, CDT: -5, CST: -6, MDT: -6, MST: -7,
-};
-
-function parseTeeTime(raw: string | null | undefined): string | null {
+export function parseTeeTime(raw: string | null | undefined): string | null {
   if (!raw) return null;
-  const match = raw.match(/(\d{1,2}):(\d{2}):\d{2}\s+([A-Z]{2,4})/);
+  const match = raw.match(/(\d{1,2}):(\d{2}):\d{2}/);
   if (!match) return null;
-  const srcHours = parseInt(match[1], 10);
+  const hours = parseInt(match[1], 10);
   const minutes = match[2];
-  const srcOffset = TZ_OFFSETS[match[3]];
-  if (srcOffset === undefined) return null;
-  const cdtHours = ((srcHours - srcOffset + (-5) + 24) % 24);
-  const ampm = cdtHours >= 12 ? 'PM' : 'AM';
-  const display = cdtHours % 12 || 12;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const display = hours % 12 || 12;
   return `${display}:${minutes} ${ampm}`;
 }
 

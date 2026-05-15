@@ -18,6 +18,7 @@ import BroadcastInfoCard from '@/components/BroadcastInfo';
 import { getTournamentFacts } from '@/lib/tournamentFacts';
 import { getBroadcastInfo } from '@/lib/broadcastSchedule';
 import { findScoreForPick } from '@/lib/golferIdentity';
+import { computeProjectedCutTotalScore, computeRawTotalScore } from '@/lib/leaderboardScores';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -72,15 +73,11 @@ function buildLeaderboard(
       .filter((g) => g.totalScore !== null && !g.dropped)
       .sort((a, b) => (a.totalScore as number) - (b.totalScore as number));
 
-    const countingCount = additionalToExclude > 0 && scoredGolfers.length > additionalToExclude
-      ? scoredGolfers.length - additionalToExclude
-      : scoredGolfers.length;
+    const currentScores = scoredGolfers.map((g) => g.totalScore as number);
+    const totalScore = computeRawTotalScore(currentScores);
+    const projectedTotalScore = computeProjectedCutTotalScore(currentScores, additionalToExclude);
 
-    const totalScore = countingCount > 0
-      ? scoredGolfers.slice(0, countingCount).reduce((sum, g) => sum + (g.totalScore as number), 0)
-      : null;
-
-    return { participant, golfers, totalScore, rank: 0 };
+    return { participant, golfers, totalScore, projectedTotalScore, rank: 0 };
   });
 
   // Sort by totalScore (ascending; null treated as worst)

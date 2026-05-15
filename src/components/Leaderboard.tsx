@@ -75,6 +75,7 @@ export default function Leaderboard({ rows }: Props) {
     <div className="space-y-2">
       {rows.map((row) => {
         const isExpanded = expanded.has(row.participant.name);
+        const showProjectedScore = row.projectedTotalScore !== null && row.projectedTotalScore !== row.totalScore;
         return (
           <div key={row.participant.name} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-green-400 transition-colors shadow-sm">
             <button
@@ -87,8 +88,15 @@ export default function Leaderboard({ rows }: Props) {
               <span className="flex-1 font-semibold text-gray-900">
                 {row.participant.name}{participantNameSuffix(row, rows)}
               </span>
-              <span className={`text-xl font-bold ${scoreColor(row.totalScore)}`}>
-                {scoreDisplay(row.totalScore)}
+              <span className="flex flex-col items-end leading-tight">
+                <span className={`text-xl font-bold ${scoreColor(row.totalScore)}`}>
+                  {scoreDisplay(row.totalScore)}
+                </span>
+                {showProjectedScore && (
+                  <span className={`text-xs font-semibold ${scoreColor(row.projectedTotalScore)}`}>
+                    Proj {scoreDisplay(row.projectedTotalScore)}
+                  </span>
+                )}
               </span>
               <span className="text-gray-400 ml-2 text-xs">{isExpanded ? '▲' : '▼'}</span>
             </button>
