@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Tournament, EspnEvent, Participant, Pick, Cut } from '@/types';
-import { getCuttablePicksForParticipant } from '@/lib/cutPool';
+import { getCuttableCutsForParticipant, getCuttablePicksForParticipant } from '@/lib/cutPool';
 
 interface ParticipantEntry {
   name: string;
@@ -436,9 +436,7 @@ export default function AdminPage() {
   function loadCutParticipant(participantName: string) {
     setCutParticipant(participantName);
     setCutMessage('');
-    const existing = cutExistingCuts
-      .filter((c) => c.participantName === participantName)
-      .sort((a, b) => a.dropNumber - b.dropNumber)
+    const existing = getCuttableCutsForParticipant(cutExistingCuts, cutPicks, participantName)
       .map((c) => c.golferEspnId);
     setCutSelectedIds(existing);
   }
@@ -915,7 +913,7 @@ export default function AdminPage() {
               >
                 <option value="">— select —</option>
                 {cutParticipants.map((p) => {
-                  const count = cutExistingCuts.filter((c) => c.participantName === p.name).length;
+                  const count = getCuttableCutsForParticipant(cutExistingCuts, cutPicks, p.name).length;
                   const suffix = maxCutSelections > 0 ? ` (${count}/${maxCutSelections})` : '';
                   return <option key={p.name} value={p.name}>{p.name}{suffix}</option>;
                 })}

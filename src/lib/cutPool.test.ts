@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getCuttablePicksForParticipant } from './cutPool.ts';
-import type { Pick } from '../types';
+import { getCuttableCutsForParticipant, getCuttablePicksForParticipant } from './cutPool.ts';
+import type { Cut, Pick } from '../types';
 
 const picks: Pick[] = [
   {
@@ -51,5 +51,29 @@ test('cut pool includes only snake draft picks for the participant', () => {
   assert.deepEqual(
     getCuttablePicksForParticipant(picks, 'Connor').map((p) => p.golferName),
     ['Snake Golfer One', 'Snake Golfer Two']
+  );
+});
+
+test('saved cuts are counted only when they are still in the snake draft cut pool', () => {
+  const cuts: Cut[] = [
+    {
+      tournamentId: 't1',
+      participantName: 'Connor',
+      golferEspnId: 'single',
+      golferName: 'Single Pick Golfer',
+      dropNumber: 1,
+    },
+    {
+      tournamentId: 't1',
+      participantName: 'Connor',
+      golferEspnId: 'snake-2',
+      golferName: 'Snake Golfer Two',
+      dropNumber: 2,
+    },
+  ];
+
+  assert.deepEqual(
+    getCuttableCutsForParticipant(cuts, picks, 'Connor').map((c) => c.golferName),
+    ['Snake Golfer Two']
   );
 });

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Participant, Pick, Cut, GolferScore } from '@/types';
 import { findScoreForPick } from '@/lib/golferIdentity';
-import { getCuttablePicksForParticipant } from '@/lib/cutPool';
+import { getCuttableCutsForParticipant, getCuttablePicksForParticipant } from '@/lib/cutPool';
 
 interface Props {
   tournamentId: string;
@@ -38,9 +38,7 @@ export default function CutSelector({
   function handleParticipantChange(name: string) {
     setSelectedParticipant(name);
     setMessage('');
-    const existing = existingCuts
-      .filter((c) => c.participantName === name)
-      .sort((a, b) => a.dropNumber - b.dropNumber)
+    const existing = getCuttableCutsForParticipant(existingCuts, picks, name)
       .map((c) => c.golferEspnId);
     if (existing.length > 0) {
       setSelectedIds(existing);
@@ -98,9 +96,7 @@ export default function CutSelector({
   }
 
   const myPicks = getCuttablePicksForParticipant(picks, selectedParticipant);
-  const myCuts = existingCuts
-    .filter((c) => c.participantName === selectedParticipant)
-    .sort((a, b) => a.dropNumber - b.dropNumber);
+  const myCuts = getCuttableCutsForParticipant(existingCuts, picks, selectedParticipant);
   const hasThirdDrop = cutsPerPerson >= 3;
 
   return (
