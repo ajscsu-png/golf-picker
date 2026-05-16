@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Tournament, EspnEvent } from '@/types';
+import type { Tournament, EspnEvent, Participant, Pick, Cut } from '@/types';
+import { getCuttablePicksForParticipant } from '@/lib/cutPool';
 
 interface ParticipantEntry {
   name: string;
@@ -78,6 +79,17 @@ export default function AdminPage() {
   const [swapField, setSwapField] = useState<Array<{ id: string; name: string }>>([]);
   const [swapSubmitting, setSwapSubmitting] = useState(false);
   const [swapMessage, setSwapMessage] = useState('');
+
+  // Correct cuts
+  const [cutTournamentId, setCutTournamentId] = useState('');
+  const [cutParticipants, setCutParticipants] = useState<Participant[]>([]);
+  const [cutPicks, setCutPicks] = useState<Pick[]>([]);
+  const [cutExistingCuts, setCutExistingCuts] = useState<Cut[]>([]);
+  const [cutParticipant, setCutParticipant] = useState('');
+  const [cutSelectedIds, setCutSelectedIds] = useState<string[]>([]);
+  const [cutLoading, setCutLoading] = useState(false);
+  const [cutSubmitting, setCutSubmitting] = useState(false);
+  const [cutMessage, setCutMessage] = useState('');
 
   useEffect(() => {
     fetch('/api/tournaments')
@@ -393,10 +405,111 @@ export default function AdminPage() {
     }
   }
 
+  async function loadCutData(tournamentId: string) {
+    setCutTournamentId(tournamentId);
+    setCutParticipants([]);
+    setCutPicks([]);
+    setCutExistingCuts([]);
+    setCutParticipant('');
+    setCutSelectedIds([]);
+    setCutMessage('');
+    if (!tournamentId) return;
+
+    setCutLoading(true);
+    try {
+      const res = await fetch(`/api/admin/tournaments/${tournamentId}/cuts`);
+      const data = await res.json();
+      if (res.ok) {
+        setCutParticipants(data.participants);
+        setCutPicks(data.picks);
+        setCutExistingCuts(data.cuts);
+      } else {
+        setCutMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setCutMessage('Network error.');
+    } finally {
+      setCutLoading(false);
+    }
+  }
+
+  function loadCutParticipant(participantName: string) {
+    setCutParticipant(participantName);
+    setCutMessage('');
+    const existing = cutExistingCuts
+      .filter((c) => c.participantName === participantName)
+      .sort((a, b) => a.dropNumber - b.dropNumber)
+      .map((c) => c.golferEspnId);
+    setCutSelectedIds(existing);
+  }
+
+  function toggleCutGolfer(golferEspnId: string) {
+    const tournament = tournaments.find((t) => t.id === cutTournamentId);
+    const maxCuts = tournament?.cutsPerPerson ?? 0;
+    setCutSelectedIds((prev) => {
+      if (prev.includes(golferEspnId)) {
+        return prev.filter((id) => id !== golferEspnId);
+      }
+      if (maxCuts > 0 && prev.length >= maxCuts) return prev;
+      return [...prev, golferEspnId];
+    });
+  }
+
+  async function submitCutCorrection(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cutTournamentId || !cutParticipant) {
+      setCutMessage('Select a tournament and participant.');
+      return;
+    }
+
+    const myPicks = getCuttablePicksForParticipant(cutPicks, cutParticipant);
+    const cuts = cutSelectedIds.map((id, idx) => {
+      const pick = myPicks.find((p) => p.golferEspnId === id);
+      return { golferEspnId: id, golferName: pick?.golferName ?? id, dropNumber: idx + 1 };
+    });
+
+    setCutSubmitting(true);
+    setCutMessage('');
+    try {
+      const res = await fetch(`/api/admin/tournaments/${cutTournamentId}/cuts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantName: cutParticipant, cuts }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const updatedCuts = data.cuts.map((c: Omit<Cut, 'tournamentId' | 'participantName'>) => ({
+          ...c,
+          tournamentId: cutTournamentId,
+          participantName: cutParticipant,
+        }));
+        setCutExistingCuts((prev) => [
+          ...prev.filter((c) => !(c.tournamentId === cutTournamentId && c.participantName === cutParticipant)),
+          ...updatedCuts,
+        ]);
+        setCutSelectedIds(updatedCuts.map((c: Cut) => c.golferEspnId));
+        setCutMessage('✅ Player cuts corrected.');
+      } else {
+        setCutMessage(`Error: ${data.error}`);
+      }
+    } catch {
+      setCutMessage('Network error.');
+    } finally {
+      setCutSubmitting(false);
+    }
+  }
+
   async function logout() {
     await fetch('/api/admin/auth', { method: 'DELETE' });
     window.location.href = '/admin/login';
   }
+
+  const selectedCutTournament = tournaments.find((t) => t.id === cutTournamentId);
+  const maxCutSelections = selectedCutTournament?.cutsPerPerson ?? 0;
+  const cutParticipantPicks = getCuttablePicksForParticipant(cutPicks, cutParticipant);
+  const correctedCutNames = cutSelectedIds
+    .map((id) => cutParticipantPicks.find((p) => p.golferEspnId === id)?.golferName)
+    .filter(Boolean);
 
   return (
     <div className="space-y-10">
@@ -763,6 +876,110 @@ export default function AdminPage() {
             className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {pSubmitting ? 'Saving...' : 'Save Participants'}
+          </button>
+        </form>
+      </section>
+
+      {/* Section: Correct Cuts */}
+      <section className="bg-white rounded-xl border border-red-200 p-6 space-y-5">
+        <div>
+          <h2 className="text-lg font-semibold text-red-700">Correct Player Cuts</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Admin override for fixing a player who did not submit every cut. This replaces that player&apos;s saved cut list.
+          </p>
+        </div>
+        <form onSubmit={submitCutCorrection} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tournament</label>
+            <select
+              value={cutTournamentId}
+              onChange={(e) => loadCutData(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            >
+              <option value="">— select —</option>
+              {tournaments.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} {t.year} [{t.status}]</option>
+              ))}
+            </select>
+          </div>
+
+          {cutLoading && <p className="text-sm text-gray-500">Loading cuts...</p>}
+
+          {cutTournamentId && !cutLoading && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Participant</label>
+              <select
+                value={cutParticipant}
+                onChange={(e) => loadCutParticipant(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              >
+                <option value="">— select —</option>
+                {cutParticipants.map((p) => {
+                  const count = cutExistingCuts.filter((c) => c.participantName === p.name).length;
+                  const suffix = maxCutSelections > 0 ? ` (${count}/${maxCutSelections})` : '';
+                  return <option key={p.name} value={p.name}>{p.name}{suffix}</option>;
+                })}
+              </select>
+            </div>
+          )}
+
+          {cutParticipant && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-gray-700">Select cuts for {cutParticipant}</p>
+                <span className="text-xs text-gray-400">{cutSelectedIds.length}/{maxCutSelections} selected</span>
+              </div>
+
+              {cutParticipantPicks.length === 0 ? (
+                <p className="text-sm text-gray-400">No picks found for {cutParticipant}.</p>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {cutParticipantPicks.map((pick) => {
+                    const dropIndex = cutSelectedIds.indexOf(pick.golferEspnId);
+                    const isSelected = dropIndex !== -1;
+                    const isDisabled = !isSelected && maxCutSelections > 0 && cutSelectedIds.length >= maxCutSelections;
+                    return (
+                      <button
+                        key={pick.golferEspnId}
+                        type="button"
+                        onClick={() => toggleCutGolfer(pick.golferEspnId)}
+                        disabled={isDisabled}
+                        className={`min-h-12 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                          isSelected
+                            ? 'border-red-400 bg-red-50 text-red-700 font-medium'
+                            : isDisabled
+                              ? 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+                              : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="block">{pick.golferName}</span>
+                        {isSelected && <span className="text-xs">DROP {dropIndex + 1}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {correctedCutNames.length > 0 && (
+                <p className="text-xs text-gray-500">
+                  Saving will set {cutParticipant}&apos;s cuts to: {correctedCutNames.join(', ')}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {cutMessage && (
+            <p className={`text-sm ${cutMessage.startsWith('✅') ? 'text-green-700' : 'text-red-600'}`}>
+              {cutMessage}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={cutSubmitting || !cutParticipant || cutParticipantPicks.length === 0}
+            className="bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-60 transition-colors"
+          >
+            {cutSubmitting ? 'Saving...' : 'Save Cut Correction'}
           </button>
         </form>
       </section>

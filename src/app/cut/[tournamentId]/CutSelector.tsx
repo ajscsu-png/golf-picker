@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { Participant, Pick, Cut, GolferScore } from '@/types';
 import { findScoreForPick } from '@/lib/golferIdentity';
+import { getCuttablePicksForParticipant } from '@/lib/cutPool';
 
 interface Props {
   tournamentId: string;
@@ -45,7 +46,7 @@ export default function CutSelector({
       setSelectedIds(existing);
     } else {
       // Auto-select golfers who missed the cut, up to the limit
-      const myPicks = picks.filter((p) => p.participantName === name);
+      const myPicks = getCuttablePicksForParticipant(picks, name);
       const missedCut = myPicks
         .filter((p) => findScoreForPick(scores, p)?.status === 'cut')
         .map((p) => p.golferEspnId)
@@ -69,7 +70,7 @@ export default function CutSelector({
     if (!selectedParticipant) { setMessage('Select your name first.'); return; }
     if (selectedIds.length === 0) { setMessage('Select at least 1 golfer to cut.'); return; }
 
-    const myPicks = picks.filter((p) => p.participantName === selectedParticipant);
+    const myPicks = getCuttablePicksForParticipant(picks, selectedParticipant);
     const cuts = selectedIds.map((id, idx) => {
       const pick = myPicks.find((p) => p.golferEspnId === id)!;
       return { golferEspnId: id, golferName: pick.golferName, dropNumber: idx + 1 };
@@ -96,7 +97,7 @@ export default function CutSelector({
     }
   }
 
-  const myPicks = picks.filter((p) => p.participantName === selectedParticipant);
+  const myPicks = getCuttablePicksForParticipant(picks, selectedParticipant);
   const myCuts = existingCuts
     .filter((c) => c.participantName === selectedParticipant)
     .sort((a, b) => a.dropNumber - b.dropNumber);

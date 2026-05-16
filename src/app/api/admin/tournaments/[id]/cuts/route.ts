@@ -1,24 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTournamentById, getParticipants, getPicks, getCuts, setCuts } from '@/lib/sheets';
-import { getCurrentRound } from '@/lib/espn';
+import { getCuts, getParticipants, getPicks, getTournamentById, setCuts } from '@/lib/sheets';
 import { getCuttablePicksForParticipant } from '@/lib/cutPool';
 
+function unauthorized() {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+}
+
+function isAdmin(req: NextRequest) {
+  return req.cookies.get('admin_token')?.value === process.env.ADMIN_TOKEN;
+}
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const [cuts, tournament] = await Promise.all([
-    getCuts(params.id),
+  if (!isAdmin(req)) return unauthorized();
+
+  const [tournament, participants, picks, cuts] = await Promise.all([
     getTournamentById(params.id),
+    getParticipants(params.id),
+    getPicks(params.id),
+    getCuts(params.id),
   ]);
-  const round = tournament ? await getCurrentRound(tournament.espnEventId) : 1;
-  return NextResponse.json({ cuts, round, locked: round >= 3 });
+
+  if (!tournament) {
+    return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ tournament, participants, picks, cuts });
 }
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  if (!isAdmin(req)) return unauthorized();
+
   const { participantName, cuts } = await req.json() as {
     participantName: string;
     cuts: Array<{ golferEspnId: string; golferName: string; dropNumber: number }>;
@@ -38,12 +55,6 @@ export async function POST(
     return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
   }
 
-  // Check if Round 3 has started
-  const round = await getCurrentRound(tournament.espnEventId);
-  if (round >= 3) {
-    return NextResponse.json({ error: 'Cuts are locked — Round 3 has begun.' }, { status: 403 });
-  }
-
   const participant = participants.find((p) => p.name === participantName);
   if (!participant) {
     return NextResponse.json({ error: 'Participant not found' }, { status: 404 });
@@ -58,12 +69,27 @@ export async function POST(
 
   const myPicks = getCuttablePicksForParticipant(picks, participantName);
   const myGolferIds = new Set(myPicks.map((p) => p.golferEspnId));
+  const seenGolferIds = new Set<string>();
+
   for (const cut of cuts) {
     if (!myGolferIds.has(cut.golferEspnId)) {
       return NextResponse.json({ error: `${cut.golferName} was not picked by ${participantName}` }, { status: 400 });
     }
+    if (seenGolferIds.has(cut.golferEspnId)) {
+      return NextResponse.json({ error: `${cut.golferName} was selected more than once` }, { status: 400 });
+    }
+    seenGolferIds.add(cut.golferEspnId);
   }
 
-  await setCuts(params.id, participantName, cuts);
-  return NextResponse.json({ ok: true });
+  const normalizedCuts = cuts.map((cut, idx) => {
+    const pick = myPicks.find((p) => p.golferEspnId === cut.golferEspnId);
+    return {
+      golferEspnId: cut.golferEspnId,
+      golferName: pick?.golferName ?? cut.golferName,
+      dropNumber: idx + 1,
+    };
+  });
+
+  await setCuts(params.id, participantName, normalizedCuts);
+  return NextResponse.json({ ok: true, cuts: normalizedCuts });
 }
