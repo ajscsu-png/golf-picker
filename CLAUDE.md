@@ -1,4 +1,32 @@
-# Golf Picker — Claude Context
+# Golf Picker — AI Context
+
+> Auto-read by **Claude Code** (`CLAUDE.md`) and **Codex** (`AGENTS.md`) — `AGENTS.md` and `.cursorrules` are symlinks to this file. Edit `CLAUDE.md` only.
+
+---
+
+## Goal
+
+A Masters / golf-tournament pool app for a fixed group of 8 friends — draft golfers, track live scores, manage drops. Optimize for **it just works on tournament weekend** with zero babysitting.
+
+## Priorities (in order)
+
+1. **Reliability during a live tournament** — scores must keep updating even when ESPN's API misbehaves. Graceful fallback over clever features.
+2. **Simple data model** — Google Sheets is the backend on purpose; don't add a database.
+3. **Low-friction admin** — Andrew runs it; the 8 players just view/pick.
+
+## Hard Rules
+
+- **Never** commit Google service-account credentials — they live in env vars only.
+- **Always** verify a UI change in the browser before calling it done (it's a deployed, user-facing site).
+- ESPN summary endpoint 502s during live rounds — **always** keep the scoreboard-endpoint fallback working.
+
+## Points of Concern
+
+- ESPN API has two response shapes (summary vs scoreboard) — changes must handle both.
+- No database means Sheets rate limits / auth are the failure mode; handle errors gracefully.
+- Pushing to `main` auto-deploys to Vercel — a bad push is live immediately.
+
+---
 
 ## Hosting
 - Deployed on **Vercel** at https://golf-picker.vercel.app
