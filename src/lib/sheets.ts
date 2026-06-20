@@ -109,6 +109,14 @@ export async function setPlayerPhones(players: Array<{ name: string; phone: stri
 
 const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person', 'is_major', 'has_single_draft'];
 
+export function getRowsWithSingleActiveTournament(rows: string[][], activeTournamentId: string): string[][] {
+  return rows.map((r) => {
+    if (r[0] === activeTournamentId) return [r[0], r[1], r[2], r[3], 'active', ...r.slice(5)];
+    if (r[4] === 'active') return [r[0], r[1], r[2], r[3], 'completed', ...r.slice(5)];
+    return r;
+  });
+}
+
 function rowToTournament(r: string[]): Tournament {
   return {
     id: r[0],
@@ -172,6 +180,21 @@ export async function updateTournamentStatus(
   const rows = await getRows('Tournaments');
   const updated = rows.map((r) => (r[0] === id ? [r[0], r[1], r[2], r[3], status, ...r.slice(5)] : r));
   await clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, updated);
+}
+
+export async function setActiveTournament(id: string): Promise<Tournament | null> {
+  const rows = await getRows('Tournaments');
+  const target = rows.find((r) => r[0] === id);
+  if (!target) return null;
+
+  const updated = getRowsWithSingleActiveTournament(rows, id);
+  await Promise.all([
+    clearAndWriteRows('Tournaments', TOURNAMENT_HEADER, updated),
+    setConfig('active_tournament_id', id),
+  ]);
+
+  const updatedTarget = updated.find((r) => r[0] === id) ?? target;
+  return rowToTournament(updatedTarget);
 }
 
 export async function updateTournament(
