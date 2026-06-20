@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getParticipants, setParticipants, getPlayerPhones } from '@/lib/sheets';
+import { getParticipants, setParticipants } from '@/lib/sheets';
 
 export async function GET(
   _req: NextRequest,
@@ -28,12 +28,6 @@ export async function POST(
     return NextResponse.json({ error: 'Draft positions must be unique' }, { status: 400 });
   }
 
-  // Look up phone numbers from the persistent Players directory
-  const phoneMap = await getPlayerPhones();
-
-  await setParticipants(
-    params.id,
-    participants.map((p) => ({ ...p, phone: phoneMap.get(p.name) }))
-  );
+  await setParticipants(params.id, participants);
   return NextResponse.json({ ok: true });
 }

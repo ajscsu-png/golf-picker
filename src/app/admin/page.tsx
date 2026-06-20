@@ -61,13 +61,6 @@ export default function AdminPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState('');
 
-  // Phone directory
-  const [phoneEntries, setPhoneEntries] = useState<Array<{ name: string; phone: string }>>(
-    PLAYER_NAMES.map((name) => ({ name, phone: '' }))
-  );
-  const [phoneSubmitting, setPhoneSubmitting] = useState(false);
-  const [phoneMessage, setPhoneMessage] = useState('');
-
   // Swap pick
   const [swapTournamentId, setSwapTournamentId] = useState('');
   const [swapParticipant, setSwapParticipant] = useState('');
@@ -96,19 +89,6 @@ export default function AdminPage() {
       .then((r) => r.json())
       .then(setTournaments)
       .catch(() => {});
-    fetch('/api/players')
-      .then((r) => r.json())
-      .then((saved: Array<{ name: string; phone: string }>) => {
-        if (saved.length > 0) {
-          setPhoneEntries(
-            PLAYER_NAMES.map((name) => ({
-              name,
-              phone: saved.find((p) => p.name === name)?.phone ?? '',
-            }))
-          );
-        }
-      })
-      .catch(() => {});
   }, []);
 
   async function loadEspnEvents() {
@@ -121,29 +101,6 @@ export default function AdminPage() {
       setEspnEvents([]);
     } finally {
       setLoadingEvents(false);
-    }
-  }
-
-  async function savePhones(e: React.FormEvent) {
-    e.preventDefault();
-    setPhoneSubmitting(true);
-    setPhoneMessage('');
-    try {
-      const res = await fetch('/api/players', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ players: phoneEntries.filter((p) => p.phone.trim()) }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPhoneMessage('✅ Phone numbers saved.');
-      } else {
-        setPhoneMessage(`❌ ${data.error}`);
-      }
-    } catch {
-      setPhoneMessage('❌ Failed to save.');
-    } finally {
-      setPhoneSubmitting(false);
     }
   }
 
@@ -982,47 +939,7 @@ export default function AdminPage() {
         </form>
       </section>
 
-      {/* Section D: Phone Directory */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800">📱 Phone Directory</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Saved once — phone numbers are automatically applied to every tournament. Use E.164 format: <code className="bg-gray-100 px-1 rounded">+15551234567</code>
-          </p>
-        </div>
-        <form onSubmit={savePhones} className="space-y-3">
-          {phoneEntries.map((entry, idx) => (
-            <div key={entry.name} className="flex items-center gap-3">
-              <span className="text-sm text-gray-700 w-20 flex-shrink-0">{entry.name}</span>
-              <input
-                type="tel"
-                value={entry.phone}
-                placeholder="+15551234567"
-                onChange={(e) => {
-                  const next = [...phoneEntries];
-                  next[idx] = { ...next[idx], phone: e.target.value };
-                  setPhoneEntries(next);
-                }}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-              />
-            </div>
-          ))}
-          {phoneMessage && (
-            <p className={`text-sm ${phoneMessage.startsWith('✅') ? 'text-green-700' : 'text-red-700'}`}>
-              {phoneMessage}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={phoneSubmitting}
-            className="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-60 transition-colors"
-          >
-            {phoneSubmitting ? 'Saving...' : 'Save Phone Numbers'}
-          </button>
-        </form>
-      </section>
-
-      {/* Section E: Delete Tournament */}
+      {/* Section D: Delete Tournament */}
       <section className="bg-white rounded-xl border border-red-200 p-6 space-y-5">
         <h2 className="text-lg font-semibold text-red-700">Delete Tournament</h2>
         <p className="text-sm text-gray-500">Permanently removes the tournament, all picks, participants, and scores.</p>

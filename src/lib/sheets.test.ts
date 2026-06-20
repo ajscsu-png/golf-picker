@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getRowsWithSingleActiveTournament } from './sheets.ts';
+import { getParticipantRows, getRowsWithSingleActiveTournament } from './sheets.ts';
 
 test('activating one tournament demotes any other active tournament', () => {
   const rows = [
@@ -16,6 +16,19 @@ test('activating one tournament demotes any other active tournament', () => {
       ['pga', 'completed'],
       ['us-open', 'active'],
       ['open', 'draft'],
+    ]
+  );
+});
+
+test('participant rows do not persist phone numbers', () => {
+  assert.deepEqual(
+    getParticipantRows('us-open', [
+      { name: 'Andy', draftPosition: 1 },
+      { name: 'Connor', draftPosition: 2 },
+    ]),
+    [
+      ['us-open', 'Andy', '1'],
+      ['us-open', 'Connor', '2'],
     ]
   );
 });

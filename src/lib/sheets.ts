@@ -89,22 +89,6 @@ export async function setConfig(key: string, value: string): Promise<void> {
   await clearAndWriteRows('Config', ['key', 'value'], updated);
 }
 
-// ─── Players (persistent phone directory) ────────────────────────────────────
-
-export async function getPlayerPhones(): Promise<Map<string, string>> {
-  const rows = await getRows('Players');
-  const map = new Map<string, string>();
-  for (const r of rows) {
-    if (r[0] && r[1]) map.set(r[0], r[1]);
-  }
-  return map;
-}
-
-export async function setPlayerPhones(players: Array<{ name: string; phone: string }>): Promise<void> {
-  const rows = players.map((p) => [p.name, p.phone]);
-  await clearAndWriteRows('Players', ['name', 'phone'], rows);
-}
-
 // ─── Tournaments ─────────────────────────────────────────────────────────────
 
 const TOURNAMENT_HEADER = ['id', 'name', 'year', 'espn_event_id', 'status', 'picks_per_person', 'cuts_per_person', 'is_major', 'has_single_draft'];
@@ -238,14 +222,13 @@ export async function deleteTournament(id: string): Promise<void> {
 
 // ─── Participants ─────────────────────────────────────────────────────────────
 
-const PARTICIPANT_HEADER = ['tournament_id', 'name', 'draft_position', 'phone'];
+const PARTICIPANT_HEADER = ['tournament_id', 'name', 'draft_position'];
 
 function rowToParticipant(r: string[]): Participant {
   return {
     tournamentId: r[0],
     name: r[1],
     draftPosition: parseInt(r[2], 10),
-    phone: r[3] ?? undefined,
   };
 }
 
@@ -259,17 +242,23 @@ export async function getParticipants(tournamentId: string): Promise<Participant
 
 export async function setParticipants(
   tournamentId: string,
-  participants: Array<{ name: string; draftPosition: number; phone?: string }>
+  participants: Array<{ name: string; draftPosition: number }>
 ): Promise<void> {
   const allRows = await getRows('Participants');
   const otherRows = allRows.filter((r) => r[0] !== tournamentId);
-  const newRows = participants.map((p) => [
+  const newRows = getParticipantRows(tournamentId, participants);
+  await clearAndWriteRows('Participants', PARTICIPANT_HEADER, [...otherRows, ...newRows]);
+}
+
+export function getParticipantRows(
+  tournamentId: string,
+  participants: Array<{ name: string; draftPosition: number }>
+): string[][] {
+  return participants.map((p) => [
     tournamentId,
     p.name,
     String(p.draftPosition),
-    p.phone ?? '',
   ]);
-  await clearAndWriteRows('Participants', PARTICIPANT_HEADER, [...otherRows, ...newRows]);
 }
 
 // ─── Picks ───────────────────────────────────────────────────────────────────
