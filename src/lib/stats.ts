@@ -45,7 +45,7 @@ export function aggregateParticipantStats(results: FinalizedResult[]): StatsSumm
     pools.set(key, [...(pools.get(key) ?? []), result]);
   }
 
-  for (const poolResults of pools.values()) {
+  for (const poolResults of Array.from(pools.values())) {
     const winners = poolResults.filter((result) => result.rank === 1);
     const losers = poolResults.filter((result) => result.rank !== 1);
     const winnerShare = winners.length > 0 ? (losers.length * ENTRY_FEE) / winners.length : 0;
@@ -60,7 +60,7 @@ export function aggregateParticipantStats(results: FinalizedResult[]): StatsSumm
     }
   }
 
-  const participants = [...byName.values()].map(({ finishTotals, ...participant }) => {
+  const participants = Array.from(byName.values()).map(({ finishTotals, ...participant }) => {
     for (const poolType of ['single', 'snake'] as const) {
       const pool = participant[poolType];
       pool.averageFinish = pool.played > 0 ? finishTotals[poolType] / pool.played : null;
