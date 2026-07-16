@@ -1,4 +1,5 @@
 export type TournamentStatus = 'draft' | 'active' | 'completed';
+export type PoolType = 'single' | 'snake';
 
 export interface Tournament {
   id: string;
@@ -77,4 +78,29 @@ export interface ParticipantLeaderboardRow {
   totalScore: number | null;
   projectedTotalScore: number | null;
   rank: number;
+}
+
+export interface FinalizedResult {
+  tournamentId: string;
+  tournamentName: string;
+  year: number;
+  poolType: PoolType;
+  participantName: string;
+  rank: number;
+  totalScore: number;
+  finalizedAt: string;
+}
+
+export interface PoolStats {
+  wins: number;
+  averageFinish: number | null;
+  played: number;
+}
+
+export interface ParticipantStats {
+  name: string;
+  single: PoolStats;
+  snake: PoolStats;
+  grossWinnings: number;
+  netWinnings: number;
 }
