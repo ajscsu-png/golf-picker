@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { getJokePool } from '@/lib/statsMoneyRoasts';
 
 const JOKES = [
   "Golf is like sex — you don't have to be good at it to enjoy it.",
@@ -90,11 +92,13 @@ const JOKES = [
 ];
 
 export default function GolfJoke() {
-  const [joke, setJoke] = useState(JOKES[0]);
+  const pathname = usePathname();
+  const [joke, setJoke] = useState(() => getJokePool(pathname, JOKES)[0]);
 
   useEffect(() => {
-    setJoke(JOKES[Math.floor(Math.random() * JOKES.length)]);
-  }, []);
+    const jokePool = getJokePool(pathname, JOKES);
+    setJoke(jokePool[Math.floor(Math.random() * jokePool.length)]);
+  }, [pathname]);
 
   return (
     <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3 text-sm text-yellow-800 italic text-center">
