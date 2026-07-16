@@ -203,4 +203,3 @@ Confirm the deployment for the pushed commit reaches `READY`.
 - [ ] **Step 5: Verify the deployed user experience**
 
 Open `https://golf-picker.vercel.app/stats` in a real browser. Verify the completed-tournament count, participant ordering, summary leaders, gross/net values, desktop table, and mobile cards. Confirm active The Open data is absent and the Net column sums to `$0`.
-

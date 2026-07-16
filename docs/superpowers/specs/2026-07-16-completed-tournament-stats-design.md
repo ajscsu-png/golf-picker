@@ -71,4 +71,3 @@ Seed the recovered PGA Championship and U.S. Open Single/Snake final results int
 - Preserve normalized golfer-name matching for recovered odds-backed picks.
 - Run the complete test suite, lint, and production build.
 - Deploy to Vercel and verify `https://golf-picker.vercel.app/stats` in a browser at desktop and mobile widths.
-

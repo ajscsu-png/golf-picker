@@ -52,7 +52,6 @@ test('keeps single and snake wins and average finishes separate', () => {
     },
   ]);
 });
-
 test('calculates gross winnings and zero-sum net balances', () => {
   const summary = aggregateParticipantStats([
     result('pga', 'single', 'Andy', 1, -5),
@@ -89,4 +88,3 @@ test('splits contributions from non-winners across tied winners', () => {
     { name: 'Tim', grossWinnings: 0, netWinnings: -10 },
   ]);
 });
-
