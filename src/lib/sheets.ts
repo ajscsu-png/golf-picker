@@ -506,7 +506,7 @@ export function getRowsWithTeamScoreSnapshots(
     const row = teamScoreSnapshotToRow(snapshot);
     merged.set(key(row), row);
   }
-  return [...merged.values()];
+  return Array.from(merged.values());
 }
 
 export async function getTeamScoreHistory(tournamentId: string): Promise<TeamScoreSnapshot[]> {

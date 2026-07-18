@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTournaments, upsertScores } from '@/lib/sheets';
+import {
+  getCuts,
+  getParticipants,
+  getPicks,
+  getTeamScoreHistory,
+  getTournaments,
+  upsertScores,
+  upsertTeamScoreSnapshots,
+} from '@/lib/sheets';
 import { getLeaderboard } from '@/lib/espn';
+import { captureTeamMomentum, persistTeamMomentumSafely } from '@/lib/teamMomentumCapture';
 
 async function runUpdate() {
   const tournaments = await getTournaments();
@@ -15,7 +24,23 @@ async function runUpdate() {
       const scores = await getLeaderboard(tournament.espnEventId, { noCache: true });
       const withId = scores.map((s) => ({ ...s, tournamentId: tournament.id }));
       await upsertScores(withId);
-      return { tournamentId: tournament.id, golferCount: scores.length };
+      const [participants, picks, cuts, existing] = await Promise.all([
+        getParticipants(tournament.id),
+        getPicks(tournament.id),
+        getCuts(tournament.id),
+        getTeamScoreHistory(tournament.id),
+      ]);
+      const snapshots = captureTeamMomentum({
+        tournamentId: tournament.id,
+        participants,
+        picks,
+        scores: withId,
+        cuts,
+        existing,
+        now: new Date(),
+      });
+      const momentum = await persistTeamMomentumSafely(snapshots, upsertTeamScoreSnapshots);
+      return { tournamentId: tournament.id, golferCount: scores.length, ...momentum };
     })
   );
 

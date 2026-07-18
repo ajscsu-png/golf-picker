@@ -85,7 +85,7 @@ export function dedupeTeamScoreSnapshots(rows: TeamScoreSnapshot[]): TeamScoreSn
     const current = merged.get(key);
     if (!current || current.capturedAt <= row.capturedAt) merged.set(key, row);
   }
-  return [...merged.values()];
+  return Array.from(merged.values());
 }
 
 export function buildTeamScoreSnapshots(input: BuildSnapshotInput): TeamScoreSnapshot[] {
