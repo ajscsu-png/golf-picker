@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import type { Tournament, Participant, Pick, GolferScore, Cut } from '@/types';
+import type { Tournament, Participant, Pick, GolferScore, Cut, TeamScoreSnapshot } from '@/types';
 
 const SHEET_ID = process.env.GOOGLE_SHEETS_ID!;
 
@@ -70,6 +70,44 @@ async function clearAndWriteRows(
       requestBody: { values: allRows },
     });
   }
+}
+
+async function ensureSheetWithHeader(sheetName: string, header: string[]): Promise<void> {
+  try {
+    const result = await sheets().spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${sheetName}!1:1`,
+    });
+    if ((result.data.values?.[0] ?? []).length === 0) {
+      await sheets().spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `${sheetName}!A1`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [header] },
+      });
+    }
+    return;
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!message.includes('Unable to parse range') && !message.includes('badRequest')) throw err;
+  }
+
+  try {
+    await sheets().spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: sheetName } } }] },
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!message.toLowerCase().includes('already exists')) throw err;
+  }
+
+  await sheets().spreadsheets.values.update({
+    spreadsheetId: SHEET_ID,
+    range: `${sheetName}!A1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: [header] },
+  });
 }
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -420,6 +458,73 @@ export async function upsertScores(incoming: GolferScore[]): Promise<void> {
   const newRows = incoming.map(scoreToRow);
   await clearAndWriteRows('Scores', SCORES_HEADER, [...otherRows, ...newRows]);
   await setConfig('last_scores_updated', new Date().toISOString());
+}
+
+// ─── Team score history ─────────────────────────────────────────────────────
+
+const TEAM_SCORE_HISTORY_HEADER = [
+  'tournament_id',
+  'participant_name',
+  'local_date',
+  'hour_key',
+  'captured_at',
+  'team_total',
+  'snapshot_type',
+];
+
+function teamScoreSnapshotToRow(snapshot: TeamScoreSnapshot): string[] {
+  return [
+    snapshot.tournamentId,
+    snapshot.participantName,
+    snapshot.localDate,
+    snapshot.hourKey,
+    snapshot.capturedAt,
+    String(snapshot.teamTotal),
+    snapshot.snapshotType,
+  ];
+}
+
+function rowToTeamScoreSnapshot(row: string[]): TeamScoreSnapshot {
+  return {
+    tournamentId: row[0],
+    participantName: row[1],
+    localDate: row[2],
+    hourKey: row[3],
+    capturedAt: row[4],
+    teamTotal: Number(row[5]),
+    snapshotType: row[6] as TeamScoreSnapshot['snapshotType'],
+  };
+}
+
+export function getRowsWithTeamScoreSnapshots(
+  rows: string[][],
+  snapshots: TeamScoreSnapshot[]
+): string[][] {
+  const key = (row: string[]) => [row[0], row[1], row[2], row[3]].join('\u0000');
+  const merged = new Map(rows.map((row) => [key(row), row]));
+  for (const snapshot of snapshots) {
+    const row = teamScoreSnapshotToRow(snapshot);
+    merged.set(key(row), row);
+  }
+  return [...merged.values()];
+}
+
+export async function getTeamScoreHistory(tournamentId: string): Promise<TeamScoreSnapshot[]> {
+  const rows = await getRows('TeamScoreHistory');
+  return rows
+    .filter((row) => row[0] === tournamentId && row.length >= TEAM_SCORE_HISTORY_HEADER.length)
+    .map(rowToTeamScoreSnapshot);
+}
+
+export async function upsertTeamScoreSnapshots(snapshots: TeamScoreSnapshot[]): Promise<void> {
+  if (snapshots.length === 0) return;
+  await ensureSheetWithHeader('TeamScoreHistory', TEAM_SCORE_HISTORY_HEADER);
+  const rows = await getRows('TeamScoreHistory');
+  await clearAndWriteRows(
+    'TeamScoreHistory',
+    TEAM_SCORE_HISTORY_HEADER,
+    getRowsWithTeamScoreSnapshots(rows, snapshots)
+  );
 }
 
 // ─── Trash Talk ──────────────────────────────────────────────────────────────

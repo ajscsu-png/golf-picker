@@ -5,7 +5,22 @@ import {
   getConfigValueRange,
   getParticipantRows,
   getRowsWithSingleActiveTournament,
+  getRowsWithTeamScoreSnapshots,
 } from './sheets.ts';
+import type { TeamScoreSnapshot } from '../types/index.ts';
+
+function teamSnapshot(overrides: Partial<TeamScoreSnapshot> = {}): TeamScoreSnapshot {
+  return {
+    tournamentId: 'open',
+    participantName: 'Wyatt',
+    localDate: '2026-07-19',
+    hourKey: '2026-07-19T09:00',
+    capturedAt: '2026-07-19T14:00:00.000Z',
+    teamTotal: -10,
+    snapshotType: 'hourly',
+    ...overrides,
+  };
+}
 
 test('config updates target only the matching value cell', () => {
   const rows = [
@@ -46,4 +61,28 @@ test('participant rows do not persist phone numbers', () => {
       ['us-open', 'Connor', '2'],
     ]
   );
+});
+
+test('replaces a matching participant hour without duplicating it', () => {
+  const existing = [[
+    'open', 'Wyatt', '2026-07-19', '2026-07-19T09:00',
+    '2026-07-19T14:00:00.000Z', '-10', 'hourly',
+  ]];
+  const rows = getRowsWithTeamScoreSnapshots(existing, [teamSnapshot({
+    capturedAt: '2026-07-19T14:45:00.000Z',
+    teamTotal: -12,
+  })]);
+
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0][4], '2026-07-19T14:45:00.000Z');
+  assert.equal(rows[0][5], '-12');
+});
+
+test('keeps distinct participant and hour snapshots', () => {
+  const rows = getRowsWithTeamScoreSnapshots([], [
+    teamSnapshot(),
+    teamSnapshot({ participantName: 'Andy' }),
+    teamSnapshot({ hourKey: '2026-07-19T10:00' }),
+  ]);
+  assert.equal(rows.length, 3);
 });
