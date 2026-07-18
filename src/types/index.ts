@@ -80,6 +80,16 @@ export interface ParticipantLeaderboardRow {
   rank: number;
 }
 
+export interface TeamScoreSnapshot {
+  tournamentId: string;
+  participantName: string;
+  localDate: string;
+  hourKey: string;
+  capturedAt: string;
+  teamTotal: number;
+  snapshotType: 'baseline' | 'hourly' | 'final';
+}
+
 export interface FinalizedResult {
   tournamentId: string;
   tournamentName: string;
