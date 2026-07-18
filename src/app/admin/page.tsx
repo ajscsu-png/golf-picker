@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { Tournament, EspnEvent, Participant, Pick, Cut } from '@/types';
 import { getCuttableCutsForParticipant, getCuttablePicksForParticipant } from '@/lib/cutPool';
+import { getActiveTournamentId, markTournamentActive } from '@/lib/adminTournamentState';
 
 interface ParticipantEntry {
   name: string;
@@ -87,7 +88,10 @@ export default function AdminPage() {
   useEffect(() => {
     fetch('/api/tournaments')
       .then((r) => r.json())
-      .then(setTournaments)
+      .then((loaded: Tournament[]) => {
+        setTournaments(loaded);
+        setActiveTournamentId(getActiveTournamentId(loaded));
+      })
       .catch(() => {});
   }, []);
 
@@ -288,6 +292,12 @@ export default function AdminPage() {
       });
       if (res.ok) {
         const t = tournaments.find((x) => x.id === activeTournamentId);
+        const updatedTournaments = markTournamentActive(tournaments, activeTournamentId);
+        setTournaments(updatedTournaments);
+        if (editTournamentId) {
+          const edited = updatedTournaments.find((x) => x.id === editTournamentId);
+          if (edited) setEditStatus(edited.status);
+        }
         setActiveMessage(`✅ Active tournament set to: ${t?.name ?? activeTournamentId}`);
       } else {
         setActiveMessage('Error saving.');

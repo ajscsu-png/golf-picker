@@ -18,7 +18,11 @@ import BroadcastInfoCard from '@/components/BroadcastInfo';
 import { getTournamentFacts } from '@/lib/tournamentFacts';
 import { getBroadcastInfo } from '@/lib/broadcastSchedule';
 import { findScoreForPick } from '@/lib/golferIdentity';
-import { computeProjectedCutTotalScore, computeRawTotalScore } from '@/lib/leaderboardScores';
+import {
+  computeProjectedCutTotalScore,
+  computeRawTotalScore,
+  computeTournamentCutLine,
+} from '@/lib/leaderboardScores';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
@@ -131,19 +135,7 @@ export default async function LeaderboardPage({ params }: Props) {
   const facts = getTournamentFacts(tournament.name);
   const broadcastInfo = getBroadcastInfo(tournament.name, tournament.year);
 
-  // Projected cut line: use best score among officially cut golfers if available,
-  // otherwise project using the 50th active golfer (Masters cuts top 50 + ties)
-  const cutLine = (() => {
-    if (scores.length === 0) return null;
-    const cutGolfers = scores.filter((s) => s.status === 'cut' && s.totalScore !== null);
-    if (cutGolfers.length > 0) {
-      return Math.min(...cutGolfers.map((s) => s.totalScore as number));
-    }
-    const active = scores
-      .filter((s) => s.status === 'active' && s.totalScore !== null)
-      .sort((a, b) => (a.totalScore as number) - (b.totalScore as number));
-    return active.length >= 50 ? active[49].totalScore : null;
-  })();
+  const cutLine = computeTournamentCutLine(tournament.name, scores);
 
   function cutLineDisplay(score: number): string {
     if (score === 0) return 'E';
@@ -182,8 +174,8 @@ export default async function LeaderboardPage({ params }: Props) {
         <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600">
           <span>✂</span>
           <span>
-            {scores.some((s) => s.status === 'cut') ? 'Cut line' : 'Projected cut'}:
-            {' '}<span className="font-semibold text-gray-800">{cutLineDisplay(cutLine)}</span>
+            {cutLine.official ? 'Cut line' : 'Projected cut'}:
+            {' '}<span className="font-semibold text-gray-800">{cutLineDisplay(cutLine.score)}</span>
           </span>
         </div>
       )}

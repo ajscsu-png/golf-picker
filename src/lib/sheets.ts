@@ -80,13 +80,26 @@ export async function getConfig(key: string): Promise<string | null> {
   return row?.[1] ?? null;
 }
 
+export function getConfigValueRange(rows: string[][], key: string): string | null {
+  const rowIndex = rows.findIndex((r) => r[0] === key);
+  return rowIndex === -1 ? null : `Config!B${rowIndex + 2}`;
+}
+
 export async function setConfig(key: string, value: string): Promise<void> {
   const rows = await getRows('Config');
-  const updated = rows.map((r) => (r[0] === key ? [key, value] : r));
-  if (!updated.some((r) => r[0] === key)) {
-    updated.push([key, value]);
+  const range = getConfigValueRange(rows, key);
+
+  if (range) {
+    await sheets().spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range,
+      valueInputOption: 'RAW',
+      requestBody: { values: [[value]] },
+    });
+    return;
   }
-  await clearAndWriteRows('Config', ['key', 'value'], updated);
+
+  await appendRow('Config', [key, value]);
 }
 
 // ─── Tournaments ─────────────────────────────────────────────────────────────

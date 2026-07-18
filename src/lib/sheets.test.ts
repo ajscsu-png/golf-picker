@@ -1,7 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getParticipantRows, getRowsWithSingleActiveTournament } from './sheets.ts';
+import {
+  getConfigValueRange,
+  getParticipantRows,
+  getRowsWithSingleActiveTournament,
+} from './sheets.ts';
+
+test('config updates target only the matching value cell', () => {
+  const rows = [
+    ['active_tournament_id', 'old-id'],
+    ['last_scores_updated', 'old-time'],
+  ];
+
+  assert.equal(getConfigValueRange(rows, 'active_tournament_id'), 'Config!B2');
+  assert.equal(getConfigValueRange(rows, 'last_scores_updated'), 'Config!B3');
+  assert.equal(getConfigValueRange(rows, 'missing'), null);
+});
 
 test('activating one tournament demotes any other active tournament', () => {
   const rows = [
