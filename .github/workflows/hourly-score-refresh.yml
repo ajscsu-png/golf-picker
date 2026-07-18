@@ -1,0 +1,14 @@
+name: Hourly score refresh
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refresh scores and capture team momentum
+        run: curl --fail --silent --show-error --retry 2 https://golf-picker.vercel.app/api/cron/update-scores
