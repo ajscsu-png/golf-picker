@@ -149,3 +149,38 @@ export function getMomentumYScale(
   const span = Math.max(1, max - min);
   return (score: number) => yTop + ((score - min) / span) * (yBottom - yTop);
 }
+
+export interface MomentumChartPoint {
+  hourKey: string;
+  label: string;
+  score: number;
+  x: number;
+  y: number;
+  snapshotType: TeamScoreSnapshot['snapshotType'];
+}
+
+export function momentumHourLabel(hourKey: string): string {
+  const hour = Number(hourKey.slice(-5, -3));
+  const displayHour = hour % 12 || 12;
+  return `${displayHour} ${hour < 12 ? 'AM' : 'PM'}`;
+}
+
+export function getMomentumChartPoints(
+  snapshots: TeamScoreSnapshot[],
+  width: number,
+  height: number
+): MomentumChartPoint[] {
+  if (snapshots.length === 0) return [];
+  const xLeft = 42;
+  const xRight = width - 22;
+  const y = getMomentumYScale(snapshots.map((row) => row.teamTotal), 26, height - 38);
+  const xStep = snapshots.length > 1 ? (xRight - xLeft) / (snapshots.length - 1) : 0;
+  return snapshots.map((row, index) => ({
+    hourKey: row.hourKey,
+    label: momentumHourLabel(row.hourKey),
+    score: row.teamTotal,
+    x: snapshots.length === 1 ? (xLeft + xRight) / 2 : xLeft + xStep * index,
+    y: y(row.teamTotal),
+    snapshotType: row.snapshotType,
+  }));
+}

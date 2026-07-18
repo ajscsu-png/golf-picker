@@ -7,6 +7,7 @@ import {
   getCuts,
   getTrashMessages,
   getConfig,
+  getTeamScoreHistory,
 } from '@/lib/sheets';
 import type { ParticipantLeaderboardRow, GolferScore, Cut } from '@/types';
 import Leaderboard from '@/components/Leaderboard';
@@ -24,6 +25,7 @@ import {
   computeTournamentCutLine,
 } from '@/lib/leaderboardScores';
 import Link from 'next/link';
+import { getCurrentDaySnapshots } from '@/lib/teamMomentum';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,7 +107,7 @@ function buildLeaderboard(
 }
 
 export default async function LeaderboardPage({ params }: Props) {
-  const [tournament, participants, picks, scores, cuts, trashMessages, lastUpdatedRaw] = await Promise.all([
+  const [tournament, participants, picks, scores, cuts, trashMessages, lastUpdatedRaw, scoreHistory] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),
     getPicks(params.tournamentId),
@@ -113,6 +115,7 @@ export default async function LeaderboardPage({ params }: Props) {
     getCuts(params.tournamentId),
     getTrashMessages(params.tournamentId),
     getConfig('last_scores_updated'),
+    getTeamScoreHistory(params.tournamentId),
   ]);
 
   const lastUpdated = (() => {
@@ -136,6 +139,7 @@ export default async function LeaderboardPage({ params }: Props) {
   const broadcastInfo = getBroadcastInfo(tournament.name, tournament.year);
 
   const cutLine = computeTournamentCutLine(tournament.name, scores);
+  const todayMomentum = getCurrentDaySnapshots(scoreHistory, new Date());
 
   function cutLineDisplay(score: number): string {
     if (score === 0) return 'E';
@@ -190,15 +194,15 @@ export default async function LeaderboardPage({ params }: Props) {
             No scores yet — use Refresh Scores once the tournament begins.
           </div>
           {tournament.hasSingleDraft ? (
-            <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} />
+            <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} momentum={todayMomentum} />
           ) : (
-            <Leaderboard rows={rows} />
+            <Leaderboard rows={rows} momentum={todayMomentum} showMomentum />
           )}
         </div>
       ) : tournament.hasSingleDraft ? (
-        <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} />
+        <LeaderboardToggle singleRows={singleRows} snakeRows={snakeRows} momentum={todayMomentum} />
       ) : (
-        <Leaderboard rows={rows} />
+        <Leaderboard rows={rows} momentum={todayMomentum} showMomentum />
       )}
 
       {(tournament.status === 'active' || tournament.status === 'completed') && (

@@ -6,7 +6,9 @@ import {
   computeDisplayedTeamTotal,
   getCentralTimeBucket,
   getCurrentDaySnapshots,
+  getMomentumChartPoints,
   getMomentumYScale,
+  momentumHourLabel,
 } from './teamMomentum.ts';
 import type { TeamScoreSnapshot } from '../types/index.ts';
 
@@ -109,4 +111,25 @@ test('maps better golf scores higher on the y axis', () => {
   const scale = getMomentumYScale([-10, -14, -18], 36, 174);
   assert.ok(scale(-18) < scale(-10));
   assert.ok(scale(-10) < scale(-6));
+});
+
+test('lays out hourly points left to right and better scores higher', () => {
+  const points = getMomentumChartPoints([
+    snapshot({ hourKey: '2026-07-18T08:00', teamTotal: -10 }),
+    snapshot({ hourKey: '2026-07-18T09:00', teamTotal: -14 }),
+    snapshot({ hourKey: '2026-07-18T10:00', teamTotal: -12 }),
+  ], 320, 180);
+
+  assert.deepEqual(points.map(({ x, score }) => [x, score]), [
+    [42, -10],
+    [170, -14],
+    [298, -12],
+  ]);
+  assert.ok(points[1].y < points[0].y);
+});
+
+test('formats clock hours without minutes', () => {
+  assert.equal(momentumHourLabel('2026-07-18T08:00'), '8 AM');
+  assert.equal(momentumHourLabel('2026-07-18T12:00'), '12 PM');
+  assert.equal(momentumHourLabel('2026-07-18T16:00'), '4 PM');
 });

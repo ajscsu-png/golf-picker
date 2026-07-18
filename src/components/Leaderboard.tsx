@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import type { ParticipantLeaderboardRow, GolferScore } from '@/types';
+import type { ParticipantLeaderboardRow, GolferScore, TeamScoreSnapshot } from '@/types';
 import { participantNameSuffix } from '@/lib/leaderboardDecorations';
 import { golferTeeTimeLabel } from '@/lib/leaderboardDisplay';
+import TeamMomentumChart from '@/components/TeamMomentumChart';
 
 function scoreDisplay(score: number | null): string {
   if (score === null) return '—';
@@ -57,9 +58,11 @@ function statusBadge(status: string, dropped: boolean, bubbleApplied: boolean) {
 
 interface Props {
   rows: ParticipantLeaderboardRow[];
+  momentum?: TeamScoreSnapshot[];
+  showMomentum?: boolean;
 }
 
-export default function Leaderboard({ rows }: Props) {
+export default function Leaderboard({ rows, momentum = [], showMomentum = false }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   function toggle(name: string) {
@@ -103,6 +106,12 @@ export default function Leaderboard({ rows }: Props) {
 
             {isExpanded && (
               <div className="border-t border-gray-100">
+                {showMomentum && (
+                  <TeamMomentumChart
+                    participantName={row.participant.name}
+                    snapshots={momentum.filter((snapshot) => snapshot.participantName === row.participant.name)}
+                  />
+                )}
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 text-xs text-gray-500">

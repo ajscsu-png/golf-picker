@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import Leaderboard from '@/components/Leaderboard';
-import type { ParticipantLeaderboardRow } from '@/types';
+import type { ParticipantLeaderboardRow, TeamScoreSnapshot } from '@/types';
 
 type Tab = 'single' | 'snake';
 
 interface Props {
   singleRows: ParticipantLeaderboardRow[];
   snakeRows: ParticipantLeaderboardRow[];
+  momentum?: TeamScoreSnapshot[];
 }
 
-export default function LeaderboardToggle({ singleRows, snakeRows }: Props) {
+export default function LeaderboardToggle({ singleRows, snakeRows, momentum = [] }: Props) {
   const [tab, setTab] = useState<Tab>('snake');
 
   const rows = tab === 'single' ? singleRows : snakeRows;
@@ -41,7 +42,7 @@ export default function LeaderboardToggle({ singleRows, snakeRows }: Props) {
           </button>
         ))}
       </div>
-      <Leaderboard rows={rows} />
+      <Leaderboard rows={rows} momentum={momentum} showMomentum={tab === 'snake'} />
     </div>
   );
 }
