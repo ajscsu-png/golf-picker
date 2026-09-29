@@ -5,12 +5,12 @@ import type {
   Pick,
   TeamScoreSnapshot,
 } from '@/types';
-import { findScoreForPick } from '@/lib/golferIdentity';
+import { findScoreForPick } from './golferIdentity.ts';
 import {
   buildTeamScoreSnapshots,
   computeDisplayedTeamTotal,
   parseTeeTimeMinutes,
-} from '@/lib/teamMomentum';
+} from './teamMomentum.ts';
 
 interface CaptureInput {
   tournamentId: string;
