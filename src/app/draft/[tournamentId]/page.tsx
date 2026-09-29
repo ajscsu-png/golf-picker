@@ -6,10 +6,11 @@ import Link from 'next/link';
 export const revalidate = 0; // always dynamic for the draft
 
 interface Props {
-  params: { tournamentId: string };
+  params: Promise<{ tournamentId: string }>;
 }
 
-export default async function DraftPage({ params }: Props) {
+export default async function DraftPage(props: Props) {
+  const params = await props.params;
   const [tournament, participants, picks] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),

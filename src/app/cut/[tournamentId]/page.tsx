@@ -6,10 +6,11 @@ import CutSelector from './CutSelector';
 export const revalidate = 0;
 
 interface Props {
-  params: { tournamentId: string };
+  params: Promise<{ tournamentId: string }>;
 }
 
-export default async function CutPage({ params }: Props) {
+export default async function CutPage(props: Props) {
+  const params = await props.params;
   const [tournament, participants, picks, cuts] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),

@@ -30,7 +30,7 @@ import { getCurrentDaySnapshots } from '@/lib/teamMomentum';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  params: { tournamentId: string };
+  params: Promise<{ tournamentId: string }>;
 }
 
 function buildLeaderboard(
@@ -106,7 +106,8 @@ function buildLeaderboard(
   return rows;
 }
 
-export default async function LeaderboardPage({ params }: Props) {
+export default async function LeaderboardPage(props: Props) {
+  const params = await props.params;
   const [tournament, participants, picks, scores, cuts, trashMessages, lastUpdatedRaw, scoreHistory] = await Promise.all([
     getTournamentById(params.tournamentId),
     getParticipants(params.tournamentId),

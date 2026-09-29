@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTrashMessages, addTrashMessage, getTournamentById, getParticipants } from '@/lib/sheets';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const messages = await getTrashMessages(params.id);
   return NextResponse.json(messages);
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { participantName, message } = await req.json();
 
   if (!participantName || !message?.trim()) {

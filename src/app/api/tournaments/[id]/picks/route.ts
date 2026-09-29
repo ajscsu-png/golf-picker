@@ -13,18 +13,14 @@ import {
   isDraftComplete,
 } from '@/lib/draft';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const picks = await getPicks(params.id);
   return NextResponse.json(picks);
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const body = await req.json();
   const { participantName, golferName, golferEspnId } = body as {
     participantName: string;
