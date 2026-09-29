@@ -3,10 +3,8 @@ import { getTournamentById, getParticipants, getPicks, getCuts, setCuts } from '
 import { getCurrentRound } from '@/lib/espn';
 import { getCuttablePicksForParticipant } from '@/lib/cutPool';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const [cuts, tournament] = await Promise.all([
     getCuts(params.id),
     getTournamentById(params.id),
@@ -15,10 +13,8 @@ export async function GET(
   return NextResponse.json({ cuts, round, locked: round >= 3 });
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { participantName, cuts } = await req.json() as {
     participantName: string;
     cuts: Array<{ golferEspnId: string; golferName: string; dropNumber: number }>;

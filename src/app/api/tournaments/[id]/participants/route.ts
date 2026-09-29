@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getParticipants, setParticipants } from '@/lib/sheets';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const participants = await getParticipants(params.id);
   return NextResponse.json(participants);
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const body = await req.json();
   const { participants } = body as {
     participants: Array<{ name: string; draftPosition: number }>;

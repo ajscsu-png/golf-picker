@@ -10,10 +10,8 @@ function isAdmin(req: NextRequest) {
   return req.cookies.get('admin_token')?.value === process.env.ADMIN_TOKEN;
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!isAdmin(req)) return unauthorized();
 
   const [tournament, participants, picks, cuts] = await Promise.all([
@@ -30,10 +28,8 @@ export async function GET(
   return NextResponse.json({ tournament, participants, picks, cuts });
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!isAdmin(req)) return unauthorized();
 
   const { participantName, cuts } = await req.json() as {

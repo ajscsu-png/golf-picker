@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTournamentById, getPicks, getParticipants, swapPick, isGolferPicked } from '@/lib/sheets';
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { participantName, oldGolferEspnId, newGolferEspnId, newGolferName } = await req.json();
 
   if (!participantName || !oldGolferEspnId || !newGolferEspnId || !newGolferName) {

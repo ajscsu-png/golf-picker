@@ -5,10 +5,8 @@ export const dynamic = 'force-dynamic';
 const SUMMARY_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary';
 const SCOREBOARD_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { eventId: string } }
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+  const params = await props.params;
   const { eventId } = params;
 
   const [summaryRes, scoreboardRes] = await Promise.all([
