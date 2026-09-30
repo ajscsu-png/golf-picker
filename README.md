@@ -30,5 +30,7 @@ are enabled.
 
 The live app is [golf-picker.vercel.app](https://golf-picker.vercel.app). Tournament
 records are stored in the Google Sheet named **Golf Tournament Picker**. The hourly
-GitHub Actions workflow calls the live score refresh endpoint; it does not deploy the
-app.
+score refresh (`/api/cron/update-scores`) is called from the Unraid server
+(`scripts/golf-score-refresh.sh` in `unraid-config`, hourly at :07), which reports each
+run to the Tower Uptime Kuma monitor "Golf Picker score refresh" so a skipped or failing
+refresh pages. It moved off GitHub Actions because GitHub can delay or drop scheduled runs.
