@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 
 export const dynamic = 'force-dynamic';
 
 const SUMMARY_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/summary';
 const SCOREBOARD_BASE = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 
-export async function GET(_req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const params = await props.params;
-  const { eventId } = params;
+  const eventId = encodeURIComponent(params.eventId);
 
   const [summaryRes, scoreboardRes] = await Promise.all([
     fetch(`${SUMMARY_BASE}?event=${eventId}`, { cache: 'no-store' }),

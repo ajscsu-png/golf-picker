@@ -34,7 +34,7 @@ function parseStatus(competitor: Record<string, unknown>): GolferScore['status']
 
 export async function getCurrentRound(espnEventId: string): Promise<number> {
   try {
-    const res = await fetch(`${SCOREBOARD_BASE}?event=${espnEventId}`, { cache: 'no-store' });
+    const res = await fetch(`${SCOREBOARD_BASE}?event=${encodeURIComponent(espnEventId)}`, { cache: 'no-store' });
     if (!res.ok) return 1;
     const data = await res.json() as Record<string, unknown>;
     const events = (data.events as Array<Record<string, unknown>>) ?? [];
@@ -104,7 +104,7 @@ export async function getField(eventId: string): Promise<EspnGolfer[]> {
   }
 
   // 1. Try summary endpoint (works once tournament is live)
-  const summaryRes = await fetch(`${SUMMARY_BASE}?event=${eventId}`, {
+  const summaryRes = await fetch(`${SUMMARY_BASE}?event=${encodeURIComponent(eventId)}`, {
     next: { revalidate: 3600 },
   });
   if (summaryRes.ok) {
@@ -124,7 +124,7 @@ export async function getField(eventId: string): Promise<EspnGolfer[]> {
   }
 
   // 2. Try scoreboard with event ID — only use if the event actually matches
-  const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${eventId}`, {
+  const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${encodeURIComponent(eventId)}`, {
     next: { revalidate: 3600 },
   });
   if (scoreboardRes.ok) {
@@ -138,7 +138,7 @@ export async function getField(eventId: string): Promise<EspnGolfer[]> {
   //    then fetch the scoreboard by date (which correctly returns that week's event)
   try {
     const coreRes = await fetch(
-      `https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/${eventId}`,
+      `https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/${encodeURIComponent(eventId)}`,
       { next: { revalidate: 3600 } }
     );
     if (coreRes.ok) {
@@ -172,7 +172,7 @@ export async function getLeaderboard(
     : { next: { revalidate: 60 } };
 
   // Try summary endpoint first (has full per-round data)
-  const summaryRes = await fetch(`${SUMMARY_BASE}?event=${eventId}`, fetchOptions);
+  const summaryRes = await fetch(`${SUMMARY_BASE}?event=${encodeURIComponent(eventId)}`, fetchOptions);
   if (summaryRes.ok) {
     const data = await summaryRes.json() as Record<string, unknown>;
     const competitors = extractCompetitors(data);
@@ -182,7 +182,7 @@ export async function getLeaderboard(
   }
 
   // Fallback: scoreboard endpoint (summary can be unavailable during live rounds)
-  const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${eventId}`, fetchOptions);
+  const scoreboardRes = await fetch(`${SCOREBOARD_BASE}?event=${encodeURIComponent(eventId)}`, fetchOptions);
   if (!scoreboardRes.ok) return [];
   const sbData = await scoreboardRes.json() as Record<string, unknown>;
   const events = (sbData.events as Array<Record<string, unknown>>) ?? [];

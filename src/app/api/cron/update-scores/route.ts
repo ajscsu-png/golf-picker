@@ -8,6 +8,7 @@ import {
   upsertScores,
   upsertTeamScoreSnapshots,
 } from '@/lib/sheets';
+import { isAdminRequest, isCronAuthorized } from '@/lib/auth';
 import { getLeaderboard } from '@/lib/espn';
 import { captureTeamMomentum, persistTeamMomentumSafely } from '@/lib/teamMomentumCapture';
 
@@ -47,16 +48,22 @@ async function runUpdate() {
   return { updated: results };
 }
 
-// Called by Vercel cron
-export async function POST(req: NextRequest) {
+// Vercel cron sends GET with `Authorization: Bearer $CRON_SECRET`; fails closed if unset.
+// An authenticated admin session (leaderboard refresh button) is also accepted.
+function authorized(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  return (
+    isCronAuthorized(authHeader) ||
+    isAdminRequest(req.cookies.get('admin_token')?.value, authHeader)
+  );
+}
+
+export async function POST(req: NextRequest) {
+  if (!authorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   return NextResponse.json(await runUpdate());
 }
 
-// Called by manual refresh button on leaderboard
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!authorized(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   return NextResponse.json(await runUpdate());
 }

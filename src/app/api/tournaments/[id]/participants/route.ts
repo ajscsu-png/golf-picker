@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 import { getParticipants, setParticipants } from '@/lib/sheets';
 
 export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
@@ -8,6 +9,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 }
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const params = await props.params;
   const body = await req.json();
   const { participants } = body as {

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 import { setActiveTournament, setConfig } from '@/lib/sheets';
 
 export async function POST(req: NextRequest) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const body = await req.json();
   const { key, value } = body as { key: string; value: string };
 
