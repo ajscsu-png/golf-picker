@@ -13,6 +13,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  checks: read
+  statuses: read
 
 concurrency:
   group: dependabot-automerge
@@ -45,7 +47,7 @@ jobs:
             --json number,title | jq -c '.[]' | while read -r pr; do
             n=$(jq -r .number <<<"$pr"); title=$(jq -r .title <<<"$pr")
             if ! is_safe "$title"; then echo "#$n skip (major/unknown): $title"; continue; fi
-            info=$(gh pr view "$n" --repo "$REPO" --json mergeStateStatus,headRefOid,statusCheckRollup)
+            info=$(gh pr view "$n" --repo "$REPO" --json mergeStateStatus,headRefOid,statusCheckRollup) || { echo "#$n could not read status"; continue; }
             state=$(jq -r .mergeStateStatus <<<"$info"); sha=$(jq -r .headRefOid <<<"$info")
             total=$(jq '.statusCheckRollup | length' <<<"$info")
             bad=$(jq '[.statusCheckRollup[] | select(
