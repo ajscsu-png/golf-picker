@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 import { getTournaments, createTournament } from '@/lib/sheets';
 
 export async function GET() {
@@ -7,6 +8,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const body = await req.json();
   const { name, year, espnEventId, picksPerPerson, cutsPerPerson, isMajor, hasSingleDraft } = body;
 

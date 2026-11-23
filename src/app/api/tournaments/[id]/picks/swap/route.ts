@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 import { getTournamentById, getPicks, getParticipants, swapPick, isGolferPicked } from '@/lib/sheets';
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const params = await props.params;
   const { participantName, oldGolferEspnId, newGolferEspnId, newGolferName } = await req.json();
 
@@ -16,6 +19,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   ]);
 
   if (!tournament) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+  if (tournament.status === 'completed') {
+    return NextResponse.json({ error: 'Tournament is completed; picks are locked' }, { status: 409 });
+  }
   if (!participants.some((p) => p.name === participantName)) {
     return NextResponse.json({ error: 'Participant not found' }, { status: 404 });
   }

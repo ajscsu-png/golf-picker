@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/requireAdmin';
 import { getCuts, getParticipants, getPicks, getTournamentById, setCuts } from '@/lib/sheets';
 import { getCuttablePicksForParticipant } from '@/lib/cutPool';
 
-function unauthorized() {
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-}
-
-function isAdmin(req: NextRequest) {
-  return req.cookies.get('admin_token')?.value === process.env.ADMIN_TOKEN;
-}
-
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!isAdmin(req)) return unauthorized();
+  const denied = requireAdmin(req);
+  if (denied) return denied;
 
   const [tournament, participants, picks, cuts] = await Promise.all([
     getTournamentById(params.id),
@@ -30,7 +24,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!isAdmin(req)) return unauthorized();
+  const denied = requireAdmin(req);
+  if (denied) return denied;
 
   const { participantName, cuts } = await req.json() as {
     participantName: string;
