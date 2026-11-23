@@ -36,7 +36,7 @@ jobs:
             local t="$1"
             # Grouped updates are configured as "...-minor-and-patch" in dependabot.yml.
             if [[ "$t" == *"minor-and-patch group"* || "$t" == *"-and-patch group"* ]]; then return 0; fi
-            if [[ "$t" =~ from\ ([0-9]+)\.?([0-9]*)[^\ ]*\ to\ ([0-9]+)\.?([0-9]*) ]]; then
+            if [[ "$t" =~ from\ [^0-9\ ]*([0-9]+)\.?([0-9]*)[^\ ]*\ to\ [^0-9\ ]*([0-9]+)\.?([0-9]*) ]]; then
               local fm="${BASH_REMATCH[1]}" fn="${BASH_REMATCH[2]}" tm="${BASH_REMATCH[3]}" tn="${BASH_REMATCH[4]}"
               [ "$fm" = "$tm" ] || return 1
               # 0.x versions: a minor bump can break, treat as major.
