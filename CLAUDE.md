@@ -1,6 +1,6 @@
 # Golf Picker — AI Context
 
-> Auto-read by **Claude Code** (`CLAUDE.md`) and **Codex** (`AGENTS.md`) — `AGENTS.md` and `.cursorrules` are symlinks to this file. Edit `CLAUDE.md` only.
+> Auto-read by **Claude Code** (`CLAUDE.md`), **Codex/Grok/Cursor** (`AGENTS.md`, `.cursorrules`) and **Gemini/Antigravity** (`GEMINI.md`) — all symlinks to this file. Edit `CLAUDE.md` only.
 
 ---
 
@@ -57,3 +57,15 @@ A Masters / golf-tournament pool app for a fixed group of 8 friends — draft go
 ## Players
 - Fixed group of 8: **Andy, Connor, Kyle, Tim, Brad, Bill, Wyatt, Andrew**
 - These are pre-populated in the admin participants form
+
+## Agent Handoff
+
+- On start, read `.agent/HANDOFF.md` if it exists (branch, uncommitted work, what other tools did).
+- When stopping or finishing, commit or stash, then run `agent-ledger note "<what you did, what is next>"`. Never put secrets in a note.
+
+## Commands
+
+- Test: `npm test` · Lint: `npm run lint` · Build: `npm run build` · Run: `npm run dev`
+- Pushing to `main` deploys to Vercel; open a PR and let checks pass first.
+
+- Run the checks before saying work is done. Never delete or skip a failing test to make it pass.
